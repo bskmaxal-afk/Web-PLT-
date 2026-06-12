@@ -8,6 +8,7 @@ function PlaceholderPage({ title, description }) {
   return (
     <div className="mx-8 p-12 bg-white border border-slate-100 rounded-[2rem] shadow-xs text-center min-h-[400px] flex flex-col justify-center items-center">
       <h2 className="text-3xl font-extrabold text-slate-800 mb-4 font-display">{title}</h2>
+      
       <p className="text-sm text-slate-500 font-semibold max-w-md">{description}</p>
     </div>
   );
@@ -64,6 +65,10 @@ function App() {
                 />
               } 
             />
+
+
+ 
+
             <Route 
               path="/guide" 
               element={
@@ -82,6 +87,7 @@ function App() {
                 />
               } 
             />
+            
           </Routes>
         </DashboardLayout>
       </Router>
