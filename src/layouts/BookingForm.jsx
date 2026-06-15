@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
+import { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AppContext } from '../context/AppContext';
 
 export default function BookingForm() {
+  const navigate = useNavigate();
+  const { mySchedules, setMySchedules } = useContext(AppContext);
+
   const [formData, setFormData] = useState({
     ruang: '',
     tanggal: '',
@@ -9,13 +14,40 @@ export default function BookingForm() {
     jumlahPeserta: ''
   });
 
+  const formatIndoDateStr = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    const year = parts[0];
+    const monthIndex = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    const months = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni", 
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+    return `${day} ${months[monthIndex]} ${year}`;
+  };
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert(`Permohonan booking ${formData.ruang} berhasil dikirim! Silahkan cek menu 'Jadwal Saya'.`);
+    const newSchedule = {
+      id: Date.now(),
+      ruang: formData.ruang,
+      tanggal: formatIndoDateStr(formData.tanggal),
+      sesi: formData.sesi,
+      status: 'Pending',
+      color: 'bg-yellow-100 text-yellow-700',
+      keperluan: formData.keperluan,
+      jumlahPeserta: Number(formData.jumlahPeserta)
+    };
+    
+    setMySchedules([newSchedule, ...mySchedules]);
+    alert(`Permohonan booking ${formData.ruang} berhasil dikirim!`);
+    navigate('/schedule');
   };
 
   return (
@@ -31,9 +63,11 @@ export default function BookingForm() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Pilih Laboratorium</label>
             <select name="ruang" onChange={handleChange} required className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50">
               <option value="">-- Pilih Ruang --</option>
-              <option value="Lab Komputer 1">Lab Komputer 1 (Matematika)</option>
-              <option value="Lab Komputer 2">Lab Komputer 2 (Teknik Informatika)</option>
-              <option value="Lab Sistem Informasi">Lab Sistem Informasi</option>
+              <option value="Lab Matematika">Lab Matematika</option>
+              <option value="Lab Aplikasi 1">Lab Aplikasi 1</option>
+              <option value="Lab Aplikasi 2">Lab Aplikasi 2</option>
+              <option value="Lab Multimedia 1">Lab Multimedia 1</option>
+              <option value="Lab Komputasi">Lab Komputasi</option>
             </select>
           </div>
 
