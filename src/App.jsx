@@ -13,6 +13,44 @@ function PlaceholderPage({ title, description }) {
   );
 }
 
+import React, { useState } from 'react';
+import BookingForm from './components/dashboard/BookingForm';
+import MySchedule from './components/dashboard/MySchedule';
+import ContactSupport from './components/dashboard/ContactSupport';
+import History from './components/dashboard/History';
+
+function App() {
+  // State untuk menentukan menu mana yang aktif
+  const [activeMenu, setActiveMenu] = useState('booking');
+
+  return (
+    <div className="flex">
+      {/* --- SIDEBAR SIMULASI --- */}
+      <div className="w-64 bg-blue-600 text-white p-5 h-screen">
+        <button onClick={() => setActiveMenu('booking')} className={`block w-full text-left p-3 rounded ${activeMenu === 'booking' ? 'bg-blue-800' : ''}`}>
+          Pemesanan Ruang
+        </button>
+        <button onClick={() => setActiveMenu('jadwal')} className={`block w-full text-left p-3 rounded ${activeMenu === 'jadwal' ? 'bg-blue-800' : ''}`}>
+          Jadwal Saya
+        </button>
+        <button onClick={() => setActiveMenu('kontak')} className={`block w-full text-left p-3 rounded ${activeMenu === 'kontak' ? 'bg-blue-800' : ''}`}>
+          Kontak & Bantuan
+        </button>
+      </div>
+
+      {/* --- KONTEN UTAMA (Kanan) --- */}
+      <div className="flex-1 p-8 bg-gray-50">
+        {/* Kondisi untuk ngerun komponen sesuai menu yang diklik */}
+        {activeMenu === 'booking' && <BookingForm />}
+        {activeMenu === 'jadwal' && <MySchedule />}
+        {activeMenu === 'kontak' && <ContactSupport />}
+      </div>
+    </div>
+  );
+}
+
+export default App;
+
 function App() {
   return (
     <AppProvider>
