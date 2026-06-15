@@ -34,11 +34,11 @@ export default function Navbar() {
   };
 
   return (
-    <header className="px-8 py-4 flex justify-between items-center bg-transparent">
+    <header className="navbar-container">
       {/* Menu Button */}
       <button 
         onClick={() => setSidebarOpen(true)}
-        className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-700 shadow-xs border border-slate-100 hover:bg-slate-50 transition shrink-0 cursor-pointer lg:hidden"
+        className="menu-toggle-btn"
       >
         <Menu size={18} />
       </button>
@@ -47,15 +47,15 @@ export default function Navbar() {
       <div className="hidden lg:block"></div>
 
       {/* Date Time & Notifications */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-slate-600 font-semibold text-[13px] bg-transparent">
+      <div className="navbar-right">
+        <div className="datetime-display">
           <Calendar size={15} className="text-slate-500" />
           <span>{formatIndonesianDate(time)}</span>
         </div>
 
-        <button className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-700 shadow-xs border border-slate-100 hover:bg-slate-50 transition shrink-0 cursor-pointer relative">
+        <button className="notification-btn">
           <Bell size={18} />
-          <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-red-500"></span>
+          <span className="notification-badge"></span>
         </button>
       </div>
     </header>

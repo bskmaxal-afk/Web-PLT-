@@ -8,7 +8,7 @@ export default function LaboratoryGrid() {
       {
         id: 1,
         name: "Lab Aplikasi 1",
-        description: "Laboratorium untuk praktikum dan penelitian matematika",
+        description: "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.",
         icon: "Computer",
         colorClass: "bg-emerald-500",
         textClass: "text-emerald-600",
@@ -19,7 +19,7 @@ export default function LaboratoryGrid() {
       {
         id: 2,
         name: "Lab Aplikasi 2",
-        description: "Laboratorium untuk praktikum pemrograman dan aplikasi",
+        description: "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.",
         icon: "Computer",
         colorClass: "bg-emerald-500",
         textClass: "text-blue-600",
@@ -30,7 +30,7 @@ export default function LaboratoryGrid() {
       {
         id: 3,
         name: "Lab Data Sains",
-        description: "Laboratorium untuk praktikum pemrograman lanjutan",
+        description: "Laboratorium untuk praktikum analisis data, machine learning, dan penelitian data sains.",
         icon: "Beaker",
         colorClass: "bg-purple-500",
         textClass: "text-purple-600",
@@ -41,7 +41,7 @@ export default function LaboratoryGrid() {
       {
         id: 4,
         name: "Lab Jaringan Komputer",
-        description: "Laboratorium untuk praktikum multimedia dan desain",
+        description: "Laboratorium untuk praktikum jaringan komputer, konfigurasi perangkat, dan administrasi jaringan.",
         icon: "Router",
         colorClass: "bg-orange-500",
         textClass: "text-orange-600",
@@ -52,7 +52,7 @@ export default function LaboratoryGrid() {
       {
         id: 5,
         name: "Lab Matematika",
-        description: "Laboratorium untuk komputasi dan pengolahan data",
+        description: "Laboratorium untuk praktikum dan penelitian matematika  ",
         icon: "sqrt",
         colorClass: "bg-blue-400",
         textClass: "text-teal-600",
@@ -63,7 +63,7 @@ export default function LaboratoryGrid() {
       {
         id: 6,
         name: "Lab Multimedia 1",
-        description: "Laboratorium untuk komputasi dan pengolahan data",
+        description: "Laboratorium untuk praktikum desain grafis, editing multimedia, dan produksi konten digital.",
         icon: "Clapperboard",
         colorClass: "bg-red-400",
         textClass: "text-teal-600",
@@ -74,7 +74,7 @@ export default function LaboratoryGrid() {
       {
         id: 7,
         name: "Lab Multimedia 2",
-        description: "Laboratorium untuk komputasi dan pengolahan data",
+        description: "Laboratorium untuk praktikum desain grafis, editing multimedia, dan produksi konten digital.",
         icon: "Clapperboard",
         colorClass: "bg-red-400",
         textClass: "text-teal-600",
@@ -85,7 +85,7 @@ export default function LaboratoryGrid() {
       {
         id: 8,
         name: "Lab Programming",
-        description: "Laboratorium untuk komputasi dan pengolahan data",
+        description: "Laboratorium untuk praktikum pemrograman, pengembangan aplikasi, dan rekayasa perangkat lunak.",
         icon: "code",
         colorClass: "bg-blue-900",
         textClass: "text-teal-600",
@@ -96,7 +96,7 @@ export default function LaboratoryGrid() {
       {
         id: 9,
         name: "Lab Sistem digital ",
-        description: "Laboratorium untuk komputasi dan pengolahan data",
+        description: "Laboratorium untuk praktikum sistem digital, logika komputer, dan perancangan perangkat elektronik.",
         icon: "ChartNoAxesColumn",
         colorClass: "bg-lime-500",
         textClass: "text-teal-600",
@@ -107,7 +107,7 @@ export default function LaboratoryGrid() {
       {
         id: 10,
         name: "Lab sistem Informasi  ",
-        description: "Laboratorium untuk komputasi dan pengolahan data",
+        description: "Laboratorium untuk praktikum analisis sistem, pengelolaan data, dan pengembangan sistem informasi.",
         icon: "ChartBar",
         colorClass: "bg-slate-500",
         textClass: "text-teal-600",
@@ -117,8 +117,8 @@ export default function LaboratoryGrid() {
       },
           {
         id: 11,
-        name: "Ruang ELC ",
-        description: "Laboratorium untuk komputasi dan pengolahan data",
+        name: "Ruang ELC 1",
+        description: "Ruang untuk kegiatan pembelajaran, pelatihan, dan pengembangan kompetensi mahasiswa.",
         icon: "SquareLibrary",
         colorClass: "bg-amber-400",
         textClass: "text-teal-600",
@@ -128,8 +128,8 @@ export default function LaboratoryGrid() {
       },
       {
         id: 11,
-        name: "Ruang ELC ",
-        description: "Laboratorium untuk komputasi dan pengolahan data",
+        name: "Ruang ELC 2",
+        description: "Ruang untuk kegiatan pembelajaran, pelatihan, dan pengembangan kompetensi mahasiswa.",
         icon: "SquareLibrary",
         colorClass: "bg-amber-400",
         textClass: "text-teal-600",
@@ -140,7 +140,7 @@ export default function LaboratoryGrid() {
       {
         id: 12,
         name: "Ruang Podcast ",
-        description: "Laboratorium untuk komputasi dan pengolahan data",
+        description: "Ruang untuk kegiatan rekaman audio, podcast, dan produksi konten digital.",
         icon: "Podcast",
         colorClass: "bg-red-400",
         textClass: "text-teal-600",
@@ -151,7 +151,7 @@ export default function LaboratoryGrid() {
       {
         id: 13,
         name: "Ruang Riset ",
-        description: "Laboratorium untuk komputasi dan pengolahan data",
+        description: "Ruang untuk kegiatan penelitian, diskusi akademik, dan pengembangan inovasi.",
         icon: "BookOpenText",
         colorClass: "bg-teal-500",
         textClass: "text-teal-600",
@@ -162,7 +162,7 @@ export default function LaboratoryGrid() {
       {
         id: 14,
         name: "Ruang Operasi ",
-        description: "Laboratorium untuk komputasi dan pengolahan data",
+        description: "Ruang untuk kegiatan operasional, monitoring sistem, dan koordinasi laboratorium.",
         icon: "Syringe",
         colorClass: "bg-emerald-400",
         textClass: "text-teal-600",
@@ -216,31 +216,31 @@ export default function LaboratoryGrid() {
       <div
         key={lab.id}
         onClick={() => navigate(lab.path)}
-        className="bg-white border border-slate-100 rounded-[2rem] p-7 shadow-xs hover:shadow-xl hover:border-slate-200/50 transition-all duration-300 relative flex flex-col justify-between min-h-[190px] w-full md:max-w-[310px] hover:-translate-y-1.5 cursor-pointer group"
+        className="lab-card group"
       >
         {/* Icon */}
-        <div className={`w-12 h-12 rounded-[1.1rem] ${lab.colorClass} text-white flex items-center justify-center shadow-md shadow-slate-100`}>
+        <div className={`lab-icon-container ${lab.colorClass}`}>
           {renderIcon(lab.icon)}
         </div>
 
         {/* Info */}
-        <div className="text-left mt-6 flex-1">
-          <h4 className="font-extrabold text-slate-800 text-[16px] leading-tight mb-2 font-display">
+        <div className="lab-info">
+          <h4 className="lab-name">
             {lab.name}
           </h4>
-          <p className="text-[11px] text-slate-400 font-semibold leading-relaxed max-w-[220px]">
+          <p className="lab-description">
             {lab.description}
           </p>
         </div>
 
         {/* Action Button */}
-        <div className="flex justify-end mt-4">
+        <div className="lab-card-action">
           <button
             onClick={(e) => {
               e.stopPropagation();
               navigate(lab.path);
             }}
-            className={`w-8 h-8 rounded-full border ${lab.borderClass} ${lab.textClass} ${lab.hoverBtnClass} flex items-center justify-center transition-all duration-200 cursor-pointer`}
+            className={`lab-action-btn ${lab.borderClass} ${lab.textClass} ${lab.hoverBtnClass}`}
           >
             <ArrowRight size={14} className="stroke-[2.5]" />
           </button>
@@ -249,22 +249,22 @@ export default function LaboratoryGrid() {
     );
 
     return (
-      <section className="mt-12 px-8 flex flex-col items-center">
+      <section className="labs-section">
         {/* Header Info */}
-        <div className="text-center mb-8">
-          <span className="text-[10px] tracking-widest text-slate-400 font-extrabold uppercase leading-none">
+        <div className="labs-header">
+          <span className="labs-section-tag">
             — Pilih Ruang Laboratorium —
           </span>
-          <h3 className="text-2xl md:text-3xl font-extrabold text-slate-800 font-display mt-2 mb-2">
+          <h3 className="labs-section-title">
             Silahkan Pilih Ruang Laboratorium
           </h3>
-          <p className="text-xs text-slate-500 font-semibold">
+          <p className="labs-section-subtitle">
             Pilih ruang laboratorium yang akan digunakan sesuai kebutuhan Anda
           </p>
         </div>
 
         {/* Row 1: Labs 1, 2, 3 */}
-        <div className="flex flex-wrap justify-center gap-6 w-full max-w-5xl mb-6">
+        <div className="labs-grid">
           {labsData.slice(0, 17).map((lab) => renderCard(lab))}
         </div>
 
