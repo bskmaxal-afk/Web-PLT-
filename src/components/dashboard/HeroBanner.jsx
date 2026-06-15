@@ -65,7 +65,7 @@ export default function HeroBanner() {
             <DoorOpen size={20} />
           </div>
           <div className="text-left">
-            <div className="text-base font-extrabold text-slate-800 leading-none">5</div>
+            <div className="text-base font-extrabold text-slate-800 leading-none">17</div>
             <div className="text-[10px] text-slate-400 font-semibold mt-0.5">Total Ruang</div>
           </div>
         </div>

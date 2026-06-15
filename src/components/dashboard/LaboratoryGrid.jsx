@@ -1,4 +1,4 @@
-import { ArrowRight, Code, Play, Server, Anvil, Beaker } from "lucide-react";
+import { ArrowRight, Code, Play, Server, Anvil, Beaker , Router, Clapperboard , Computer, ChartNoAxesColumn , ChartBar, Podcast, SquareLibrary, BookOpenText, Syringe} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function LaboratoryGrid() {
@@ -9,7 +9,7 @@ export default function LaboratoryGrid() {
         id: 1,
         name: "Lab Aplikasi 1",
         description: "Laboratorium untuk praktikum dan penelitian matematika",
-        icon: "code",
+        icon: "Computer",
         colorClass: "bg-emerald-500",
         textClass: "text-emerald-600",
         borderClass: "border-emerald-500/20 hover:border-emerald-500",
@@ -20,7 +20,7 @@ export default function LaboratoryGrid() {
         id: 2,
         name: "Lab Aplikasi 2",
         description: "Laboratorium untuk praktikum pemrograman dan aplikasi",
-        icon: "code",
+        icon: "Computer",
         colorClass: "bg-emerald-500",
         textClass: "text-blue-600",
         borderClass: "border-blue-500/20 hover:border-blue-500",
@@ -31,7 +31,7 @@ export default function LaboratoryGrid() {
         id: 3,
         name: "Lab Data Sains",
         description: "Laboratorium untuk praktikum pemrograman lanjutan",
-        icon: "beaker",
+        icon: "Beaker",
         colorClass: "bg-purple-500",
         textClass: "text-purple-600",
         borderClass: "border-purple-500/20 hover:border-purple-500",
@@ -42,7 +42,7 @@ export default function LaboratoryGrid() {
         id: 4,
         name: "Lab Jaringan Komputer",
         description: "Laboratorium untuk praktikum multimedia dan desain",
-        icon: "play",
+        icon: "Router",
         colorClass: "bg-orange-500",
         textClass: "text-orange-600",
         borderClass: "border-orange-500/20 hover:border-orange-500",
@@ -53,8 +53,8 @@ export default function LaboratoryGrid() {
         id: 5,
         name: "Lab Matematika",
         description: "Laboratorium untuk komputasi dan pengolahan data",
-        icon: "server",
-        colorClass: "bg-teal-500",
+        icon: "sqrt",
+        colorClass: "bg-blue-400",
         textClass: "text-teal-600",
         borderClass: "border-teal-500/20 hover:border-teal-500",
         hoverBtnClass: "hover:bg-teal-500 hover:text-white",
@@ -64,8 +64,8 @@ export default function LaboratoryGrid() {
         id: 6,
         name: "Lab Multimedia 1",
         description: "Laboratorium untuk komputasi dan pengolahan data",
-        icon: "server",
-        colorClass: "bg-teal-500",
+        icon: "Clapperboard",
+        colorClass: "bg-red-400",
         textClass: "text-teal-600",
         borderClass: "border-teal-500/20 hover:border-teal-500",
         hoverBtnClass: "hover:bg-teal-500 hover:text-white",
@@ -75,8 +75,8 @@ export default function LaboratoryGrid() {
         id: 7,
         name: "Lab Multimedia 2",
         description: "Laboratorium untuk komputasi dan pengolahan data",
-        icon: "server",
-        colorClass: "bg-teal-500",
+        icon: "Clapperboard",
+        colorClass: "bg-red-400",
         textClass: "text-teal-600",
         borderClass: "border-teal-500/20 hover:border-teal-500",
         hoverBtnClass: "hover:bg-teal-500 hover:text-white",
@@ -86,8 +86,8 @@ export default function LaboratoryGrid() {
         id: 8,
         name: "Lab Programming",
         description: "Laboratorium untuk komputasi dan pengolahan data",
-        icon: "server",
-        colorClass: "bg-teal-500",
+        icon: "code",
+        colorClass: "bg-blue-900",
         textClass: "text-teal-600",
         borderClass: "border-teal-500/20 hover:border-teal-500",
         hoverBtnClass: "hover:bg-teal-500 hover:text-white",
@@ -97,8 +97,8 @@ export default function LaboratoryGrid() {
         id: 9,
         name: "Lab Sistem digital ",
         description: "Laboratorium untuk komputasi dan pengolahan data",
-        icon: "server",
-        colorClass: "bg-teal-500",
+        icon: "ChartNoAxesColumn",
+        colorClass: "bg-lime-500",
         textClass: "text-teal-600",
         borderClass: "border-teal-500/20 hover:border-teal-500",
         hoverBtnClass: "hover:bg-teal-500 hover:text-white",
@@ -108,8 +108,8 @@ export default function LaboratoryGrid() {
         id: 10,
         name: "Lab sistem Informasi  ",
         description: "Laboratorium untuk komputasi dan pengolahan data",
-        icon: "server",
-        colorClass: "bg-teal-500",
+        icon: "ChartBar",
+        colorClass: "bg-slate-500",
         textClass: "text-teal-600",
         borderClass: "border-teal-500/20 hover:border-teal-500",
         hoverBtnClass: "hover:bg-teal-500 hover:text-white",
@@ -119,8 +119,8 @@ export default function LaboratoryGrid() {
         id: 11,
         name: "Ruang ELC ",
         description: "Laboratorium untuk komputasi dan pengolahan data",
-        icon: "server",
-        colorClass: "bg-teal-500",
+        icon: "SquareLibrary",
+        colorClass: "bg-amber-400",
         textClass: "text-teal-600",
         borderClass: "border-teal-500/20 hover:border-teal-500",
         hoverBtnClass: "hover:bg-teal-500 hover:text-white",
@@ -130,8 +130,8 @@ export default function LaboratoryGrid() {
         id: 11,
         name: "Ruang ELC ",
         description: "Laboratorium untuk komputasi dan pengolahan data",
-        icon: "server",
-        colorClass: "bg-teal-500",
+        icon: "SquareLibrary",
+        colorClass: "bg-amber-400",
         textClass: "text-teal-600",
         borderClass: "border-teal-500/20 hover:border-teal-500",
         hoverBtnClass: "hover:bg-teal-500 hover:text-white",
@@ -141,8 +141,8 @@ export default function LaboratoryGrid() {
         id: 12,
         name: "Ruang Podcast ",
         description: "Laboratorium untuk komputasi dan pengolahan data",
-        icon: "server",
-        colorClass: "bg-teal-500",
+        icon: "Podcast",
+        colorClass: "bg-red-400",
         textClass: "text-teal-600",
         borderClass: "border-teal-500/20 hover:border-teal-500",
         hoverBtnClass: "hover:bg-teal-500 hover:text-white",
@@ -152,7 +152,7 @@ export default function LaboratoryGrid() {
         id: 13,
         name: "Ruang Riset ",
         description: "Laboratorium untuk komputasi dan pengolahan data",
-        icon: "server",
+        icon: "BookOpenText",
         colorClass: "bg-teal-500",
         textClass: "text-teal-600",
         borderClass: "border-teal-500/20 hover:border-teal-500",
@@ -163,8 +163,8 @@ export default function LaboratoryGrid() {
         id: 14,
         name: "Ruang Operasi ",
         description: "Laboratorium untuk komputasi dan pengolahan data",
-        icon: "server",
-        colorClass: "bg-teal-500",
+        icon: "Syringe",
+        colorClass: "bg-emerald-400",
         textClass: "text-teal-600",
         borderClass: "border-teal-500/20 hover:border-teal-500",
         hoverBtnClass: "hover:bg-teal-500 hover:text-white",
@@ -186,9 +186,26 @@ export default function LaboratoryGrid() {
           return <Server size={22} className="stroke-[2.5]" />;
             case "Anvil":
         return <Anvil size={22} className="stroke-[2.5]" />;
-         case "beaker":
+         case "Beaker":
         return <Beaker size={22} className="stroke-[2.5]" />;
-
+         case "Router":
+        return <Router size={22} className="stroke-[2.5]" />;
+         case "Clapperboard":
+        return <Clapperboard size={22} className="stroke-[2.5]" />;
+               case "Computer":
+        return <Computer size={22} className="stroke-[2.5]" />;
+                  case "ChartNoAxesColumn":
+        return <ChartNoAxesColumn size={22} className="stroke-[2.5]" />;
+         case "ChartBar":
+        return <ChartBar size={22} className="stroke-[2.5]" />;
+             case "Podcast":
+        return <Podcast size={22} className="stroke-[2.5]" />;
+         case "SquareLibrary":
+        return <SquareLibrary size={22} className="stroke-[2.5]" />;
+        case "BookOpenText":
+        return <BookOpenText size={22} className="stroke-[2.5]" />;
+        case "Syringe":
+        return <Syringe size={22} className="stroke-[2.5]" />;
 
         default:
           return null;
