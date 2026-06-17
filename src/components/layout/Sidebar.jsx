@@ -14,87 +14,90 @@ const menus = [
   { name: "Kontak & Bantuan", path: "/contact", icon: Phone },
 ];
 
+// Extracted outside Sidebar to avoid re-creation during render
+const SidebarContent = ({ showCloseBtn = false, setSidebarOpen }) => (
+  <div className="sidebar-container">
+    {/* Brand Header */}
+    <div className="sidebar-header">
+      <div className="sidebar-brand">
+        <div className="sidebar-logo-container">
+          <img src={logoUIN} alt="UIN Logo" className="sidebar-logo" />
+        </div>
+        <div className="flex flex-col">
+          <h1 className="sidebar-title">Lab MaTiSi</h1>
+          <p className="sidebar-subtitle">
+            Laboratorium Komputer Prodi Matematika, Teknik Informatika dan Sistem Informasi
+          </p>
+        </div>
+      </div>
+
+      {/* Mobile Close Button */}
+      {showCloseBtn && (
+        <button 
+          onClick={() => setSidebarOpen(false)}
+          className="sidebar-close-btn"
+        >
+          <X size={16} />
+        </button>
+      )}
+    </div>
+
+    {/* Navigation */}
+    <nav className="sidebar-nav">
+      {menus.map((item) => {
+        const Icon = item.icon;
+        return (
+          <NavLink
+            key={item.name}
+            to={item.path}
+            onClick={() => setSidebarOpen(false)}
+            className={({ isActive }) =>
+              `flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-semibold ${
+                isActive
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/10"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-blue-600"
+              }`
+            }
+          >
+            <Icon size={18} className="shrink-0" />
+            <span>{item.name}</span>
+          </NavLink>
+        );
+      })}
+    </nav>
+
+    {/* Help Card */}
+    <div className="sidebar-help-card">
+      <div className="sidebar-help-header">
+        <div className="sidebar-help-icon">
+          <Headphones size={18} />
+        </div>
+        <div>
+          <h4 className="sidebar-help-title">Butuh Bantuan?</h4>
+          <p className="sidebar-help-subtitle">Hubungi Admin Lab</p>
+        </div>
+      </div>
+      <a
+        href="https://wa.me/628123456789"
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => setSidebarOpen(false)}
+        className="sidebar-help-btn"
+      >
+        Hubungi Sekarang <span className="font-mono text-[10px]">&gt;</span>
+      </a>
+    </div>
+  </div>
+);
+
 export default function Sidebar() {
   const { isSidebarOpen, setSidebarOpen } = useContext(AppContext);
-
-  const SidebarContent = ({ showCloseBtn = false }) => (
-    <div className="sidebar-container">
-      {/* Brand Header */}
-      <div className="sidebar-header">
-        <div className="sidebar-brand">
-          <div className="sidebar-logo-container">
-            <img src={logoUIN} alt="UIN Logo" className="sidebar-logo" />
-          </div>
-          <div className="flex flex-col">
-            <h1 className="sidebar-title">Lab MaTiSi</h1>
-            <p className="sidebar-subtitle">
-              Laboratorium Komputer Prodi Matematika, Teknik Informatika dan Sistem Informasi
-            </p>
-          </div>
-        </div>
-
-        {/* Mobile Close Button */}
-        {showCloseBtn && (
-          <button 
-            onClick={() => setSidebarOpen(false)}
-            className="sidebar-close-btn"
-          >
-            <X size={16} />
-          </button>
-        )}
-      </div>
-
-      {/* Navigation */}
-      <nav className="sidebar-nav">
-        {menus.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.name}
-              to={item.path}
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-semibold ${
-                  isActive
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/10"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-blue-600"
-                }`
-              }
-            >
-              <Icon size={18} className="shrink-0" />
-              <span>{item.name}</span>
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      {/* Help Card */}
-      <div className="sidebar-help-card">
-        <div className="sidebar-help-header">
-          <div className="sidebar-help-icon">
-            <Headphones size={18} />
-          </div>
-          <div>
-            <h4 className="sidebar-help-title">Butuh Bantuan?</h4>
-            <p className="sidebar-help-subtitle">Hubungi Admin Lab</p>
-          </div>
-        </div>
-        <a
-          href="https://wa.me/#"
-          onClick={() => setSidebarOpen(false)}
-          className="sidebar-help-btn"
-        >
-          Hubungi Sekarang <span className="font-mono text-[10px]">&gt;</span>
-        </a>
-      </div>
-    </div>
-  );
 
   return (
     <>
       {/* Desktop Sidebar (Permanent) */}
       <aside className="sidebar">
-        <SidebarContent showCloseBtn={false} />
+        <SidebarContent showCloseBtn={false} setSidebarOpen={setSidebarOpen} />
       </aside>
 
       {/* Mobile Drawer Sidebar */}
@@ -110,7 +113,7 @@ export default function Sidebar() {
           }`} 
           onClick={(e) => e.stopPropagation()}
         >
-          <SidebarContent showCloseBtn={true} />
+          <SidebarContent showCloseBtn={true} setSidebarOpen={setSidebarOpen} />
         </aside>
       </div>
     </>

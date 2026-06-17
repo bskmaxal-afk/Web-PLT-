@@ -4,15 +4,13 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import HeroBanner from "./components/dashboard/HeroBanner";
 import LaboratoryGrid from "./components/dashboard/LaboratoryGrid";
 
-function PlaceholderPage({ title, description }) {
-  return (
-    <div className="mx-8 p-12 bg-white border border-slate-100 rounded-[2rem] shadow-xs text-center min-h-[400px] flex flex-col justify-center items-center">
-      <h2 className="text-3xl font-extrabold text-slate-800 mb-4 font-display">{title}</h2>
-      
-      <p className="text-sm text-slate-500 font-semibold max-w-md">{description}</p>
-    </div>
-  );
-}
+// Feature Pages
+import LaboratoryBookingForm from "./pages/LaboratoryBookingForm";
+import UserSchedule from "./pages/UserSchedule";
+import UsageHistory from "./pages/UsageHistory";
+import LaboratoryInformation from "./pages/LaboratoryInformation";
+import UsageGuide from "./pages/UsageGuide";
+import HelpAndSupport from "./pages/HelpAndSupport";
 
 function App() {
   return (
@@ -20,74 +18,21 @@ function App() {
       <Router>
         <DashboardLayout>
           <Routes>
-            <Route 
-              path="/" 
+            <Route
+              path="/"
               element={
                 <>
                   <HeroBanner />
                   <LaboratoryGrid />
                 </>
-              } 
+              }
             />
-            <Route 
-              path="/booking" 
-              element={
-                <PlaceholderPage 
-                  title="Pemesanan Ruang" 
-                  description="Formulir dan pengajuan pemesanan ruang laboratorium komputer MaTiSi." 
-                />
-              } 
-            />
-            <Route 
-              path="/schedule" 
-              element={
-                <PlaceholderPage 
-                  title="Jadwal Saya" 
-                  description="Jadwal penggunaan dan praktikum laboratorium komputer yang Anda ikuti." 
-                />
-              } 
-            />
-            <Route 
-              path="/history" 
-              element={
-                <PlaceholderPage 
-                  title="Riwayat Penggunaan" 
-                  description="Riwayat lengkap log pemesanan dan pemakaian laboratorium komputer." 
-                />
-              } 
-            />
-            <Route 
-              path="/laboratories" 
-              element={
-                <PlaceholderPage 
-                  title="Informasi Laboratorium" 
-                  description="Detail fasilitas, perangkat keras, perangkat lunak, dan kapasitas setiap lab komputer." 
-                />
-              } 
-            />
-
-
- 
-
-            <Route 
-              path="/guide" 
-              element={
-                <PlaceholderPage 
-                  title="Panduan Penggunaan" 
-                  description="Buku panduan dan video cara penggunaan dan pemesanan laboratorium komputer." 
-                />
-              } 
-            />
-            <Route 
-              path="/contact" 
-              element={
-                <PlaceholderPage 
-                  title="Kontak & Bantuan" 
-                  description="Hubungi admin laboratorium atau asisten praktikum jika Anda mengalami kendala." 
-                />
-              } 
-            />
-            
+            <Route path="/booking" element={<LaboratoryBookingForm />} />
+            <Route path="/schedule" element={<UserSchedule />} />
+            <Route path="/history" element={<UsageHistory />} />
+            <Route path="/laboratories" element={<LaboratoryInformation />} />
+            <Route path="/guide" element={<UsageGuide />} />
+            <Route path="/contact" element={<HelpAndSupport />} />
           </Routes>
         </DashboardLayout>
       </Router>
