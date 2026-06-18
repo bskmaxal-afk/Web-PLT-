@@ -1,7 +1,8 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
-import { ClipboardList, Send, AlertCircle } from "lucide-react";
+import { ClipboardList, Send, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { submitBooking } from "../services/bookingService";
 
 // Error message component — declared outside to avoid re-creation during render
 const FieldError = ({ message }) =>
@@ -21,7 +22,7 @@ const FieldError = ({ message }) =>
  *   jumlahPeserta (integer), tanggalKegiatan (date), jamMasuk (time),
  *   keterangan (text)
  *
- * Submit function returns a clean payload object, ready for Axios POST.
+ * Submits to POST http://172.20.32.63:3000/post/form via bookingService.
  */
 export default function LaboratoryBookingForm() {
   const navigate = useNavigate();
@@ -51,6 +52,9 @@ export default function LaboratoryBookingForm() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Toast / notification state
+  const [notification, setNotification] = useState(null); // { type: 'success'|'error', message: string }
+
   // Get selected lab name for display
   const getSelectedLabName = () => {
     const labId = parseInt(formData.namalab, 10);
@@ -70,6 +74,12 @@ export default function LaboratoryBookingForm() {
         return next;
       });
     }
+  };
+
+  // Auto-dismiss notification
+  const showNotification = (type, message) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000);
   };
 
   // Validation
@@ -145,58 +155,53 @@ export default function LaboratoryBookingForm() {
   };
 
   /**
-   * Submit handler — builds a clean payload ready for Axios POST.
-   * Currently saves to local context state; swap the comment block
-   * with the Axios call when backend is ready.
+   * Submit handler — sends data to backend via bookingService.
+   * Also saves to local context state for display in "Jadwal Saya".
    */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-
-    // Clean payload for API
-    const payload = {
-      namalab: parseInt(formData.namalab, 10),
-      namaKetua: formData.namaKetua.trim(),
-      numberwa: formData.numberwa.trim(),
-      terjadwal: formData.terjadwal,
-      matkul: formData.matkul.trim(),
-      dosen: formData.dosen.trim(),
-      jumlahPeserta: parseInt(formData.jumlahPeserta, 10),
-      tanggalKegiatan: formData.tanggalKegiatan,
-      jamMasuk: formData.jamMasuk,
-      keterangan: formData.keterangan.trim(),
-    };
+    setNotification(null);
 
     try {
-      // ===== UNCOMMENT WHEN BACKEND IS READY =====
-      // import API from '../services/api';
-      // const response = await API.post('/bookings', payload);
-      // const savedBooking = response.data;
-      // =============================================
+      const result = await submitBooking(formData);
 
-      // Local state save (temporary until backend integration)
-      const newSchedule = {
-        id: Date.now(),
-        ...payload,
-        ruang: getSelectedLabName(),
-        tanggal: formData.tanggalKegiatan,
-        status: "Pending",
-      };
+      if (result.success) {
+        // Also save to local state for "Jadwal Saya" display
+        const newSchedule = {
+          id: Date.now(),
+          namalab: parseInt(formData.namalab, 10),
+          namaKetua: formData.namaKetua.trim(),
+          numberwa: formData.numberwa.trim(),
+          terjadwal: formData.terjadwal,
+          matkul: formData.matkul.trim(),
+          dosen: formData.dosen.trim(),
+          jumlahPeserta: parseInt(formData.jumlahPeserta, 10),
+          tanggalKegiatan: formData.tanggalKegiatan,
+          jamMasuk: formData.jamMasuk,
+          keterangan: formData.keterangan.trim(),
+          ruang: getSelectedLabName(),
+          tanggal: formData.tanggalKegiatan,
+          status: "Pending",
+        };
 
-      setMySchedules([newSchedule, ...mySchedules]);
+        setMySchedules([newSchedule, ...mySchedules]);
 
-      // Clear selected lab from context
-      setSelectedLaboratory(null);
+        // Clear selected lab from context
+        setSelectedLaboratory(null);
 
-      alert(
-        `Permohonan booking ${getSelectedLabName()} berhasil dikirim!`
-      );
-      navigate("/schedule");
+        showNotification("success", `Pengajuan peminjaman ${getSelectedLabName()} berhasil dikirim! 🎉`);
+
+        // Navigate to dashboard after brief delay
+        setTimeout(() => navigate("/"), 1500);
+      } else {
+        showNotification("error", result.message);
+      }
     } catch (error) {
       console.error("Booking submission failed:", error);
-      alert("Terjadi kesalahan saat mengirim permohonan. Silakan coba lagi.");
+      showNotification("error", "Terjadi kesalahan jaringan. Pastikan server backend aktif dan coba lagi.");
     } finally {
       setIsSubmitting(false);
     }
@@ -206,6 +211,31 @@ export default function LaboratoryBookingForm() {
 
   return (
     <div className="px-8 max-w-4xl mx-auto">
+      {/* Inline Notification */}
+      {notification && (
+        <div
+          className={`mb-4 flex items-center gap-3 px-5 py-4 rounded-2xl border text-sm font-semibold transition-all duration-300 ${
+            notification.type === "success"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+              : "bg-red-50 border-red-200 text-red-800"
+          }`}
+          style={{ animation: "slideUp 0.3s ease-out" }}
+        >
+          {notification.type === "success" ? (
+            <CheckCircle size={18} className="text-emerald-500 shrink-0" />
+          ) : (
+            <XCircle size={18} className="text-red-500 shrink-0" />
+          )}
+          <span>{notification.message}</span>
+          <button
+            onClick={() => setNotification(null)}
+            className="ml-auto text-current opacity-50 hover:opacity-100 transition cursor-pointer bg-transparent border-none"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-gray-50">

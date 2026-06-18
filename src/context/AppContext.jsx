@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState } from "react";
+import { createContext, useState, useEffect, useCallback } from "react";
 import { labs } from "../data/labs";
+import { isAuthenticated as checkAuth, logoutAdmin } from "../services/authService";
 
 export const AppContext = createContext();
 
@@ -8,9 +9,8 @@ export const AppProvider = ({ children }) => {
   const [laboratories, setLaboratories] = useState(labs);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
-  // Admin authentication state for Riwayat Penggunaan access
-  const [isAdminAuthenticated, setAdminAuthenticated] = useState(false);
-
+  // Admin authentication state — initialized from localStorage for persistence
+  const [isAdminAuthenticated, setAdminAuthenticated] = useState(() => checkAuth());
 
   // Selected laboratory from card click (TUGAS 2)
   const [selectedLaboratory, setSelectedLaboratory] = useState(null);
@@ -51,7 +51,26 @@ export const AppProvider = ({ children }) => {
     },
   ]);
 
+  // Sync auth state changes to localStorage
+  const handleLogin = useCallback(() => {
+    setAdminAuthenticated(true);
+  }, []);
 
+  const handleLogout = useCallback(() => {
+    logoutAdmin();
+    setAdminAuthenticated(false);
+  }, []);
+
+  // Check auth state on mount and when storage changes (multi-tab sync)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === "matisi_admin_auth") {
+        setAdminAuthenticated(checkAuth());
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   return (
     <AppContext.Provider
@@ -66,6 +85,8 @@ export const AppProvider = ({ children }) => {
         setMySchedules,
         isAdminAuthenticated,
         setAdminAuthenticated,
+        handleLogin,
+        handleLogout,
       }}
     >
       {children}

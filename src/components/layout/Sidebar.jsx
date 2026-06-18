@@ -1,7 +1,8 @@
 import { useContext, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, CalendarDays, History, Info, CircleHelp, Phone, Headphones, X, Lock, Eye, EyeOff } from "lucide-react";
+import { LayoutDashboard, CalendarDays, History, Info, CircleHelp, Phone, Headphones, X, Lock, Eye, EyeOff, UserCheck, GraduationCap, ShieldCheck } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
+import { loginAdmin } from "../../services/authService";
 import logoUIN from "../../assets/logoUIN.jpg";
 
 const menus = [
@@ -14,7 +15,103 @@ const menus = [
 ];
 
 /**
- * Admin Login Modal — Verifies admin credentials before granting access to Riwayat Penggunaan.
+ * RoleSelectionModal — First modal: asks if user is Admin or Mahasiswa.
+ */
+function RoleSelectionModal({ isOpen, onClose, onSelectAdmin, onSelectMahasiswa }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="admin-login-overlay" onClick={onClose}>
+      <div className="admin-login-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "400px" }}>
+        {/* Close button */}
+        <button onClick={onClose} className="admin-login-close-btn">
+          <X size={16} />
+        </button>
+
+        {/* Header */}
+        <div className="admin-login-header">
+          <div className="admin-login-icon-wrapper">
+            <UserCheck size={24} />
+          </div>
+          <h3 className="admin-login-title">Verifikasi Akses</h3>
+          <p className="admin-login-subtitle">
+            Pilih peran Anda untuk mengakses halaman Riwayat Penggunaan.
+          </p>
+        </div>
+
+        {/* Role Buttons */}
+        <div className="role-selection-buttons">
+          <button onClick={onSelectAdmin} className="role-btn role-btn-admin">
+            <div className="role-btn-icon role-btn-icon-admin">
+              <ShieldCheck size={22} />
+            </div>
+            <div className="role-btn-text">
+              <span className="role-btn-label">Admin</span>
+              <span className="role-btn-desc">Akses penuh ke data riwayat</span>
+            </div>
+          </button>
+
+          <button onClick={onSelectMahasiswa} className="role-btn role-btn-mahasiswa">
+            <div className="role-btn-icon role-btn-icon-mahasiswa">
+              <GraduationCap size={22} />
+            </div>
+            <div className="role-btn-text">
+              <span className="role-btn-label">Mahasiswa</span>
+              <span className="role-btn-desc">Peminjaman laboratorium</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * StudentDenialModal — Shown when Mahasiswa tries to access Riwayat.
+ */
+function StudentDenialModal({ isOpen, onClose }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="admin-login-overlay" onClick={onClose}>
+      <div className="admin-login-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "400px" }}>
+        <button onClick={onClose} className="admin-login-close-btn">
+          <X size={16} />
+        </button>
+
+        <div className="admin-login-header">
+          <div style={{
+            width: "56px", height: "56px", borderRadius: "1rem",
+            background: "linear-gradient(135deg, #f59e0b, #d97706)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "white", margin: "0 auto 1rem",
+            boxShadow: "0 8px 24px rgba(217, 119, 6, 0.3)",
+          }}>
+            <GraduationCap size={24} />
+          </div>
+          <h3 className="admin-login-title">Akses Terbatas</h3>
+          <p className="admin-login-subtitle" style={{ marginTop: "8px", lineHeight: "1.6" }}>
+            Riwayat penggunaan hanya dapat diakses oleh <strong>Admin</strong>.
+          </p>
+          <p className="admin-login-subtitle" style={{ marginTop: "4px" }}>
+            Silakan hubungi admin laboratorium jika Anda memerlukan informasi terkait riwayat penggunaan.
+          </p>
+        </div>
+
+        <button
+          onClick={onClose}
+          className="admin-login-submit-btn"
+          style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", marginTop: "0.5rem" }}
+        >
+          Mengerti
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * AdminLoginModal — Verifies admin credentials via backend API.
  */
 function AdminLoginModal({ isOpen, onClose, onSuccess }) {
   const [username, setUsername] = useState("");
@@ -23,25 +120,27 @@ function AdminLoginModal({ isOpen, onClose, onSuccess }) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const ADMIN_USERNAME = "admin";
-  const ADMIN_PASSWORD = "admin123";
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    setTimeout(() => {
-      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    try {
+      const result = await loginAdmin({ username, password });
+
+      if (result.success) {
         onSuccess();
         setUsername("");
         setPassword("");
         setError("");
       } else {
-        setError("Username atau password salah. Silakan coba lagi.");
+        setError(result.message);
       }
+    } catch {
+      setError("Terjadi kesalahan jaringan. Pastikan server backend aktif.");
+    } finally {
       setIsLoading(false);
-    }, 600);
+    }
   };
 
   const handleClose = () => {
@@ -66,7 +165,7 @@ function AdminLoginModal({ isOpen, onClose, onSuccess }) {
           <div className="admin-login-icon-wrapper">
             <Lock size={24} />
           </div>
-          <h3 className="admin-login-title">Verifikasi Admin</h3>
+          <h3 className="admin-login-title">Login Admin</h3>
           <p className="admin-login-subtitle">
             Masukkan kredensial admin untuk mengakses riwayat penggunaan laboratorium.
           </p>
@@ -228,7 +327,9 @@ const SidebarContent = ({ showCloseBtn = false, setSidebarOpen, onHistoryClick }
 );
 
 export default function Sidebar() {
-  const { isSidebarOpen, setSidebarOpen, isAdminAuthenticated, setAdminAuthenticated } = useContext(AppContext);
+  const { isSidebarOpen, setSidebarOpen, isAdminAuthenticated, handleLogin } = useContext(AppContext);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showDenialModal, setShowDenialModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const navigate = useNavigate();
 
@@ -236,12 +337,22 @@ export default function Sidebar() {
     if (isAdminAuthenticated) {
       navigate("/history");
     } else {
-      setShowLoginModal(true);
+      setShowRoleModal(true);
     }
   };
 
+  const handleSelectAdmin = () => {
+    setShowRoleModal(false);
+    setShowLoginModal(true);
+  };
+
+  const handleSelectMahasiswa = () => {
+    setShowRoleModal(false);
+    setShowDenialModal(true);
+  };
+
   const handleLoginSuccess = () => {
-    setAdminAuthenticated(true);
+    handleLogin();
     setShowLoginModal(false);
     navigate("/history");
   };
@@ -270,7 +381,21 @@ export default function Sidebar() {
         </aside>
       </div>
 
-      {/* Admin Login Modal */}
+      {/* Step 1: Role Selection Modal */}
+      <RoleSelectionModal
+        isOpen={showRoleModal}
+        onClose={() => setShowRoleModal(false)}
+        onSelectAdmin={handleSelectAdmin}
+        onSelectMahasiswa={handleSelectMahasiswa}
+      />
+
+      {/* Step 1b: Student Denial Modal */}
+      <StudentDenialModal
+        isOpen={showDenialModal}
+        onClose={() => setShowDenialModal(false)}
+      />
+
+      {/* Step 2: Admin Login Modal */}
       <AdminLoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}

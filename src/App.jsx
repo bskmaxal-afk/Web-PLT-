@@ -6,7 +6,7 @@ import LaboratoryGrid from "./components/dashboard/LaboratoryGrid";
 
 // Feature Pages
 import LaboratoryBookingForm from "./pages/LaboratoryBookingForm";
-
+import UserSchedule from "./pages/UserSchedule";
 import UsageHistory from "./pages/UsageHistory";
 import LaboratoryInformation from "./pages/LaboratoryInformation";
 import UsageGuide from "./pages/UsageGuide";
@@ -28,7 +28,7 @@ function App() {
               }
             />
             <Route path="/booking" element={<LaboratoryBookingForm />} />
-
+            <Route path="/schedule" element={<UserSchedule />} />
             <Route path="/history" element={<UsageHistory />} />
             <Route path="/laboratories" element={<LaboratoryInformation />} />
             <Route path="/guide" element={<UsageGuide />} />
