@@ -3,29 +3,29 @@ import logoUIN from "../../assets/logoUIN.jpg";
 
 export default function Footer() {
   return (
-    <footer className="w-full bg-gradient-to-r from-blue-900 to-blue-950 text-white py-6 px-10 mt-12 flex flex-col md:flex-row justify-between items-center gap-6">
+    <footer className="footer-container">
       {/* Left: Brand */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-white shrink-0">
-          <img src={logoUIN} alt="UIN Logo" className="w-7 h-7 object-contain" />
+      <div className="footer-brand">
+        <div className="footer-logo-container">
+          <img src={logoUIN} alt="UIN Logo" className="footer-logo" />
         </div>
-        <div className="text-left">
-          <h4 className="font-bold text-sm tracking-wide">Lab MaTiSi</h4>
-          <p className="text-[10px] text-blue-200/80">Laboratorium Komputer dan Fasilitas Lainnya</p>
+        <div className="footer-brand-info">
+          <h4 className="footer-brand-title">Lab MaTiSi</h4>
+          <p className="footer-brand-subtitle">Laboratorium Komputer dan Fasilitas Lainnya</p>
         </div>
       </div>
 
       {/* Center: Copyright */}
-      <div className="text-xs text-blue-200/80 font-medium md:translate-x-4">
+      <div className="footer-copyright">
         © 2025 Lab MaTiSi - All rights reserved.
       </div>
 
       {/* Right: Social Media */}
-      <div className="flex items-center gap-3">
+      <div className="footer-socials">
         {/* Inline SVG Facebook */}
         <a
           href="#"
-          className="w-9 h-9 rounded-full border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:border-white hover:bg-white/10 transition"
+          className="social-link"
         >
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
@@ -44,7 +44,7 @@ export default function Footer() {
         {/* Inline SVG Instagram */}
         <a
           href="#"
-          className="w-9 h-9 rounded-full border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:border-white hover:bg-white/10 transition"
+          className="social-link"
         >
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
@@ -65,7 +65,7 @@ export default function Footer() {
         {/* Lucide Mail Icon */}
         <a
           href="#"
-          className="w-9 h-9 rounded-full border border-white/20 flex items-center justify-center text-white/80 hover:text-white hover:border-white hover:bg-white/10 transition"
+          className="social-link"
         >
           <Mail size={16} className="stroke-[2.2]" />
         </a>

@@ -3,12 +3,14 @@ import { AppProvider } from "./context/AppContext";
 import DashboardLayout from "./layouts/DashboardLayout";
 import HeroBanner from "./components/dashboard/HeroBanner";
 import LaboratoryGrid from "./components/dashboard/LaboratoryGrid";
-import BookingForm from "./layouts/BookingForm";
-import MySchedule from "./layouts/MySchedule";
-import ContactSupport from "./layouts/ContactSupport";
-import History from "./layouts/History";
-import LabInfo from "./layouts/LabInfo";
-import UserGuide from "./layouts/UserGuide";
+
+// Feature Pages
+import LaboratoryBookingForm from "./pages/LaboratoryBookingForm";
+import UserSchedule from "./pages/UserSchedule";
+import UsageHistory from "./pages/UsageHistory";
+import LaboratoryInformation from "./pages/LaboratoryInformation";
+import UsageGuide from "./pages/UsageGuide";
+import HelpAndSupport from "./pages/HelpAndSupport";
 
 function App() {
   return (
@@ -16,21 +18,21 @@ function App() {
       <Router>
         <DashboardLayout>
           <Routes>
-            <Route 
-              path="/" 
+            <Route
+              path="/"
               element={
                 <>
                   <HeroBanner />
                   <LaboratoryGrid />
                 </>
-              } 
+              }
             />
-            <Route path="/booking" element={<BookingForm />} />
-            <Route path="/schedule" element={<MySchedule />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/laboratories" element={<LabInfo />} />
-            <Route path="/guide" element={<UserGuide />} />
-            <Route path="/contact" element={<ContactSupport />} />
+            <Route path="/booking" element={<LaboratoryBookingForm />} />
+            <Route path="/schedule" element={<UserSchedule />} />
+            <Route path="/history" element={<UsageHistory />} />
+            <Route path="/laboratories" element={<LaboratoryInformation />} />
+            <Route path="/guide" element={<UsageGuide />} />
+            <Route path="/contact" element={<HelpAndSupport />} />
           </Routes>
         </DashboardLayout>
       </Router>
