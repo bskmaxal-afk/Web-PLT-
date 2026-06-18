@@ -26,6 +26,7 @@ function App() {
                   <LaboratoryGrid />
                 </>
               }
+              
             />
             <Route path="/booking" element={<LaboratoryBookingForm />} />
 
