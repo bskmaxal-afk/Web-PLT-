@@ -7,10 +7,10 @@ export const AppContext = createContext();
 export const AppProvider = ({ children }) => {
   const [laboratories, setLaboratories] = useState(labs);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [mySchedules, setMySchedules] = useState([
-    { id: 1, ruang: 'Lab Aplikasi 1', tanggal: '2026-06-15', sesi: 'Sesi 2 (10.00 - 12.00)', status: 'Disetujui', color: 'bg-green-100 text-green-700', keperluan: 'Praktikum Pemrograman Web', jumlahPeserta: 30 },
-    { id: 2, ruang: 'Lab Komputasi', tanggal: '2026-06-18', sesi: 'Sesi 4 (15.30 - 17.30)', status: 'Pending', color: 'bg-yellow-100 text-yellow-700', keperluan: 'Penelitian Komputasi Paralel', jumlahPeserta: 20 },
-  ]);
+
+  // Admin authentication state for Riwayat Penggunaan access
+  const [isAdminAuthenticated, setAdminAuthenticated] = useState(false);
+
 
   // Selected laboratory from card click (TUGAS 2)
   const [selectedLaboratory, setSelectedLaboratory] = useState(null);
@@ -51,27 +51,7 @@ export const AppProvider = ({ children }) => {
     },
   ]);
 
-  // Notifications state (ported from Dashboard B Navbar)
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      text: "Permohonan booking Lab Aplikasi 1 disetujui oleh admin.",
-      time: "10 menit yang lalu",
-      read: false,
-    },
-    {
-      id: 2,
-      text: "Pengingat: Jadwal praktikum Alpro besok jam 07.30 di Lab Matematika.",
-      time: "2 jam yang lalu",
-      read: false,
-    },
-    {
-      id: 3,
-      text: "Selamat datang di portal pemesanan ruang Lab MaTiSi!",
-      time: "1 hari yang lalu",
-      read: true,
-    },
-  ]);
+
 
   return (
     <AppContext.Provider
@@ -84,8 +64,8 @@ export const AppProvider = ({ children }) => {
         setSelectedLaboratory,
         mySchedules,
         setMySchedules,
-        notifications,
-        setNotifications,
+        isAdminAuthenticated,
+        setAdminAuthenticated,
       }}
     >
       {children}
