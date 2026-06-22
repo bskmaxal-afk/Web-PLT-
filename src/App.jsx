@@ -7,10 +7,10 @@ import LaboratoryGrid from "./components/dashboard/LaboratoryGrid";
 // Feature Pages
 import LaboratoryBookingForm from "./pages/LaboratoryBookingForm";
 
-import UsageHistory from "./pages/UsageHistory";
 import LaboratoryInformation from "./pages/LaboratoryInformation";
 import UsageGuide from "./pages/UsageGuide";
 import HelpAndSupport from "./pages/HelpAndSupport";
+import AdminPanel from "./pages/AdminPanel";
 
 function App() {
   return (
@@ -30,10 +30,10 @@ function App() {
             />
             <Route path="/booking" element={<LaboratoryBookingForm />} />
 
-            <Route path="/history" element={<UsageHistory />} />
             <Route path="/laboratories" element={<LaboratoryInformation />} />
             <Route path="/guide" element={<UsageGuide />} />
             <Route path="/contact" element={<HelpAndSupport />} />
+            <Route path="/admin" element={<AdminPanel />} />
           </Routes>
         </DashboardLayout>
       </Router>
