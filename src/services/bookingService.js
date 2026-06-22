@@ -15,9 +15,11 @@ export const submitBooking = async (formData) => {
       namaKetua: formData.namaKetua.trim(),
       numberWa: formData.numberwa.trim(),       // API expects capital W
       Terjadwal: formData.terjadwal,             // API expects capital T
-      matkul: formData.matkul.trim(),
-      dosen: formData.dosen.trim(),
+      matkul: (formData.matkul || "").trim() || "bukan lab pelajaran",
+      nim: (formData.nim || "").trim() || "none",
+      dosen: (formData.dosen || "").trim() || "none",
       jumlahPeserta: parseInt(formData.jumlahPeserta, 10),
+      tanggalKegiatan: formData.tanggalKegiatan,
       jamMasuk: formData.jamMasuk,
       keterangan: formData.keterangan.trim(),
     };

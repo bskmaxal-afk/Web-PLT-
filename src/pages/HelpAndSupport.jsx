@@ -17,6 +17,7 @@ export default function HelpAndSupport() {
     // API.post('/support/messages', { name, message })
     setTimeout(() => {
       setStatus("success");
+      console.log("Pengiriman pesan support sukses:", { name, message });
     }, 1200);
   };
 

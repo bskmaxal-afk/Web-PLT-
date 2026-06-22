@@ -129,14 +129,17 @@ function AdminLoginModal({ isOpen, onClose, onSuccess }) {
       const result = await loginAdmin({ username, password });
 
       if (result.success) {
+        console.log("Login admin sukses");
         onSuccess();
         setUsername("");
         setPassword("");
         setError("");
       } else {
+        console.log("Login admin gagal:", result.message);
         setError(result.message);
       }
-    } catch {
+    } catch (error) {
+      console.log("Login admin gagal (network error):", error);
       setError("Terjadi kesalahan jaringan. Pastikan server backend aktif.");
     } finally {
       setIsLoading(false);
