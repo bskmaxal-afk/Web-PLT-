@@ -3,7 +3,7 @@ import { AppContext } from "../context/AppContext";
 import { 
   Lock, Eye, EyeOff, LayoutDashboard, FileText, BarChart2, LogOut,
   Search, Filter, Plus, Edit, Trash2, Info, X, Check, Download, Printer, Calendar, Clock, Award,
-  Upload, FileSpreadsheet, FileDown
+  Upload, FileSpreadsheet, FileDown, CheckCircle, XCircle, AlertCircle
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
@@ -15,7 +15,8 @@ export default function AdminPanel() {
     setAdminAuthenticated, 
     mySchedules, 
     setMySchedules,
-    laboratories
+    laboratories,
+    addNotification
   } = useContext(AppContext);
 
   // Auth local states
@@ -41,10 +42,23 @@ export default function AdminPanel() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // States for Import Excel/CSV
+  const getMondayOfCurrentWeek = () => {
+    const today = new Date();
+    const day = today.getDay();
+    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(today.setDate(diff));
+    const y = monday.getFullYear();
+    const m = String(monday.getMonth() + 1).padStart(2, "0");
+    const d = String(monday.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
   const [importedSchedules, setImportedSchedules] = useState([]);
   const [importFileName, setImportFileName] = useState("");
   const [importError, setImportError] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
+  const [importWeekStartDate, setImportWeekStartDate] = useState(getMondayOfCurrentWeek());
+  const [importDefaultLab, setImportDefaultLab] = useState("");
 
   // Dropdown options
   const listHari = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -190,6 +204,46 @@ export default function AdminPanel() {
       setMySchedules(mySchedules.filter(s => s.id !== id));
       alert("Data berhasil dihapus.");
     }
+  };
+
+  // Approve booking (Terima) - adds notification to student
+  const handleApprove = (log) => {
+    setMySchedules(mySchedules.map(s =>
+      s.id === log.id ? { ...s, status: "diterima" } : s
+    ));
+    addNotification({
+      type: "diterima",
+      title: "Pemesanan Laboratorium Diterima! ✅",
+      message: `Halo ${log.mahasiswa || "Mahasiswa"}! Pemesanan ${log.ruang} untuk mata kuliah "${log.matkul}" pada ${log.hari}, ${log.jam} telah DITERIMA oleh admin. Selamat menggunakan laboratorium!`,
+      mahasiswa: log.mahasiswa,
+      nim: log.nim,
+      ruang: log.ruang,
+      matkul: log.matkul,
+      hari: log.hari,
+      jam: log.jam,
+    });
+    alert(`✅ Pemesanan ${log.mahasiswa || "mahasiswa"} berhasil DITERIMA. Notifikasi telah dikirim.`);
+  };
+
+  // Reject booking (Tolak) - adds notification to student
+  const handleReject = (log) => {
+    const alasan = prompt(`Masukkan alasan penolakan untuk ${log.mahasiswa || "mahasiswa"} (opsional):`) ?? "";
+    setMySchedules(mySchedules.map(s =>
+      s.id === log.id ? { ...s, status: "ditolak" } : s
+    ));
+    addNotification({
+      type: "ditolak",
+      title: "Pemesanan Laboratorium Ditolak ❌",
+      message: `Halo ${log.mahasiswa || "Mahasiswa"}! Mohon maaf, pemesanan ${log.ruang} untuk mata kuliah "${log.matkul}" pada ${log.hari}, ${log.jam} telah DITOLAK oleh admin.${alasan ? ` Alasan: ${alasan}` : ""} Silakan hubungi admin untuk informasi lebih lanjut.`,
+      mahasiswa: log.mahasiswa,
+      nim: log.nim,
+      ruang: log.ruang,
+      matkul: log.matkul,
+      hari: log.hari,
+      jam: log.jam,
+      alasan: alasan || "",
+    });
+    alert(`❌ Pemesanan ${log.mahasiswa || "mahasiswa"} berhasil DITOLAK. Notifikasi telah dikirim.`);
   };
 
   // Open Edit Modal
@@ -485,8 +539,30 @@ export default function AdminPanel() {
           return;
         }
         
-        const headers = rows[0].map(h => String(h).trim().toLowerCase());
-        const dataRows = rows.slice(1);
+        // 1. Find the header row (the row containing column names like Hari, Jam, Mata Kuliah, Dosen)
+        let headerRowIdx = -1;
+        for (let r = 0; r < rows.length; r++) {
+          const row = rows[r];
+          if (!row || row.length === 0) continue;
+          
+          const rowStrings = row.map(cell => String(cell || "").toLowerCase().trim());
+          const hasHari = rowStrings.some(s => s === "hari");
+          const hasJam = rowStrings.some(s => s === "jam" || s === "waktu");
+          const hasMatkul = rowStrings.some(s => s.includes("matkul") || s.includes("mata kuliah") || s.includes("matakuliah"));
+          
+          if (hasHari && (hasJam || hasMatkul)) {
+            headerRowIdx = r;
+            break;
+          }
+        }
+        
+        if (headerRowIdx === -1) {
+          setImportError("Format berkas tidak sesuai. Pastikan ada baris kepala tabel dengan kolom 'Hari' dan 'Jam' atau 'Mata Kuliah'.");
+          return;
+        }
+        
+        const headers = rows[headerRowIdx].map(h => String(h || "").trim().toLowerCase());
+        const dataRows = rows.slice(headerRowIdx + 1);
         
         const getColIdx = (aliases) => {
           return headers.findIndex(h => aliases.some(alias => h.includes(alias)));
@@ -495,10 +571,10 @@ export default function AdminPanel() {
         const indices = {
           hari: getColIdx(["hari"]),
           jam: getColIdx(["jam", "waktu"]),
-          dosen: getColIdx(["dosen", "pengampu"]),
-          prodi: getColIdx(["prodi", "program studi"]),
+          dosen: getColIdx(["dosen", "pengampu", "nama dosen"]),
+          prodi: getColIdx(["prodi", "program studi", "jurusan"]),
           kelas: getColIdx(["kelas"]),
-          matkul: getColIdx(["mata kuliah", "matkul"]),
+          matkul: getColIdx(["mata kuliah", "matkul", "matakuliah"]),
           ruang: getColIdx(["laboratorium", "ruangan", "ruang", "lab"]),
           tanggalInput: getColIdx(["tanggal"]),
           mahasiswa: getColIdx(["mahasiswa", "penanggung jawab", "pj"]),
@@ -507,12 +583,81 @@ export default function AdminPanel() {
           jumlahHadir: getColIdx(["jumlah hadir", "kehadiran", "hadir"])
         };
         
-        if (indices.dosen === -1 && indices.matkul === -1 && indices.ruang === -1) {
-          setImportError("Kolom data minimal tidak ditemukan. Pastikan file template memiliki kolom: 'Nama Dosen', 'Mata Kuliah', dan 'Laboratorium'.");
-          return;
+        // 2. Scan rows BEFORE headerRowIdx for the Laboratory name
+        let detectedLabName = "";
+        for (let r = 0; r < headerRowIdx; r++) {
+          const row = rows[r];
+          if (!row) continue;
+          for (let c = 0; c < row.length; c++) {
+            const cellVal = String(row[c] || "");
+            if (cellVal.toLowerCase().includes("laboratorium") || cellVal.toLowerCase().includes("lab")) {
+              if (cellVal.includes(":")) {
+                const parts = cellVal.split(":");
+                if (parts.length > 1 && parts[1].trim()) {
+                  detectedLabName = parts[1].trim();
+                  break;
+                }
+              } else if (c + 1 < row.length && row[c + 1]) {
+                detectedLabName = String(row[c + 1]).trim();
+                break;
+              }
+            }
+          }
+          if (detectedLabName) break;
         }
         
+        // Normalize lab name
+        let finalLab = importDefaultLab || "";
+        if (detectedLabName) {
+          const lowerLab = detectedLabName.toLowerCase();
+          const matched = laboratories.find(l => 
+            l.name.toLowerCase().includes(lowerLab) || lowerLab.includes(l.name.toLowerCase())
+          );
+          if (matched) {
+            finalLab = matched.name;
+          } else {
+            finalLab = detectedLabName;
+          }
+        }
+        
+        if (!finalLab && laboratories.length > 0) {
+          finalLab = laboratories[0].name;
+        }
+        
+        // Helper to get offset date from selected starting date
+        const getActualDate = (dayName, startDateStr) => {
+          if (!startDateStr) return BASE_TODAY;
+          
+          const daysMapping = {
+            "senin": 0, "monday": 0,
+            "selasa": 1, "tuesday": 1,
+            "rabu": 2, "wednesday": 2,
+            "kamis": 3, "thursday": 3,
+            "jumat": 4, "friday": 4,
+            "sabtu": 5, "saturday": 5,
+            "minggu": 6, "sunday": 6
+          };
+          
+          const normalizedDay = String(dayName).toLowerCase().trim();
+          const offset = daysMapping[normalizedDay] ?? 0;
+          
+          const date = new Date(startDateStr);
+          date.setDate(date.getDate() + offset);
+          
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, "0");
+          const d = String(date.getDate()).padStart(2, "0");
+          return `${y}-${m}-${d}`;
+        };
+        
+        // Helper to normalize time format dot -> colon
+        const normalizeTime = (timeStr) => {
+          return String(timeStr).replace(/(\d{2})\.(\d{2})/g, "$1:$2").trim();
+        };
+        
         const parsed = [];
+        let lastHari = "Senin";
+        
         dataRows.forEach((row, rowIndex) => {
           if (row.length === 0 || row.every(cell => cell == null || cell === "")) return;
           
@@ -521,52 +666,71 @@ export default function AdminPanel() {
             return String(row[idx]).trim();
           };
           
-          let tanggal = val(indices.tanggalInput, "");
-          if (tanggal) {
-            if (!isNaN(tanggal) && Number(tanggal) > 30000) {
-              const dateObj = new Date((Number(tanggal) - 25569) * 86400 * 1000);
+          let hariVal = val(indices.hari, "").trim();
+          if (hariVal) {
+            lastHari = hariVal;
+          } else {
+            hariVal = lastHari;
+          }
+          
+          const jamVal = val(indices.jam, "").trim();
+          const matkulVal = val(indices.matkul, "").trim();
+          const dosenVal = val(indices.dosen, "").trim();
+          
+          if (!jamVal || !matkulVal || matkulVal === "-" || jamVal === "-") return;
+          if (matkulVal.toLowerCase().includes("koordinator") || matkulVal.toLowerCase().includes("laboran")) return;
+          if (dosenVal.toLowerCase().includes("nip.") || dosenVal.toLowerCase().includes("nip ")) return;
+          
+          let tanggalInput = val(indices.tanggalInput, "");
+          if (!tanggalInput) {
+            tanggalInput = getActualDate(hariVal, importWeekStartDate);
+          } else {
+            if (!isNaN(tanggalInput) && Number(tanggalInput) > 30000) {
+              const dateObj = new Date((Number(tanggalInput) - 25569) * 86400 * 1000);
               if (dateObj) {
                 const year = dateObj.getFullYear();
                 const month = String(dateObj.getMonth() + 1).padStart(2, '0');
                 const day = String(dateObj.getDate()).padStart(2, '0');
-                tanggal = `${year}-${month}-${day}`;
+                tanggalInput = `${year}-${month}-${day}`;
               }
-            } else if (tanggal.includes("/")) {
-              const parts = tanggal.split("/");
+            } else if (tanggalInput.includes("/")) {
+              const parts = tanggalInput.split("/");
               if (parts.length === 3) {
                 if (parts[2].length === 4) {
-                  tanggal = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                  tanggalInput = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
                 } else if (parts[0].length === 4) {
-                  tanggal = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                  tanggalInput = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
                 }
               }
             }
           }
           
-          if (!tanggal) {
-            tanggal = BASE_TODAY;
+          let prodiVal = val(indices.prodi, "Umum");
+          const prodiMapping = {
+            "ti": "Teknik Informatika",
+            "si": "Sistem Informasi",
+            "sd": "Sains Data",
+            "mtk": "Matematika",
+            "fis": "Fisika",
+            "bio": "Biologi"
+          };
+          const normProdi = prodiVal.toLowerCase().trim();
+          if (prodiMapping[normProdi]) {
+            prodiVal = prodiMapping[normProdi];
           }
-          
-          let hariVal = val(indices.hari, "");
-          if (!hariVal && tanggal) {
-            const dateObj = new Date(tanggal);
-            const daysIndo = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-            hariVal = daysIndo[dateObj.getDay()];
-          }
-          if (!hariVal) hariVal = "Senin";
           
           const hadirVal = parseInt(val(indices.jumlahHadir, "0")) || 0;
           
           parsed.push({
             id: Date.now() + rowIndex + Math.floor(Math.random() * 1000),
             hari: hariVal,
-            jam: val(indices.jam, "08:00 - 10:00"),
-            dosen: val(indices.dosen, "Dosen Tanpa Nama"),
-            prodi: val(indices.prodi, "Umum"),
+            jam: normalizeTime(jamVal),
+            dosen: dosenVal || "Dosen Tanpa Nama",
+            prodi: prodiVal,
             kelas: val(indices.kelas, "-"),
-            matkul: val(indices.matkul, "Mata Kuliah Umum"),
-            ruang: val(indices.ruang, "Lab Umum"),
-            tanggalInput: tanggal,
+            matkul: matkulVal,
+            ruang: finalLab,
+            tanggalInput: tanggalInput,
             mahasiswa: val(indices.mahasiswa, "Admin (Penjadwalan)"),
             nim: val(indices.nim, "-"),
             numberwa: val(indices.numberwa, "-"),
@@ -934,6 +1098,7 @@ export default function AdminPanel() {
                       <th className="px-6 py-4">Dosen & Perkuliahan</th>
                       <th className="px-6 py-4">Mahasiswa (P.J.) & NIM</th>
                       <th className="px-6 py-4">Kontak & Kehadiran</th>
+                      <th className="px-6 py-4 text-center">Status</th>
                       <th className="px-6 py-4 text-center">Aksi</th>
                     </tr>
                   </thead>
@@ -976,7 +1141,22 @@ export default function AdminPanel() {
                             </div>
                           </td>
                           <td className="px-6 py-4 text-center">
-                            <div className="flex items-center justify-center gap-1">
+                            {log.status === "diterima" ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-[10px] font-bold">
+                                <CheckCircle size={11} /> Diterima
+                              </span>
+                            ) : log.status === "ditolak" ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 border border-red-200 text-red-600 rounded-full text-[10px] font-bold">
+                                <XCircle size={11} /> Ditolak
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-[10px] font-bold">
+                                <AlertCircle size={11} /> Pending
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <div className="flex items-center justify-center gap-1 flex-wrap">
                               <button
                                 onClick={() => setSelectedLog(log)}
                                 className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
@@ -998,13 +1178,32 @@ export default function AdminPanel() {
                               >
                                 <Trash2 size={14} />
                               </button>
+                              {/* Terima/Tolak - only show if not already decided */}
+                              {log.status !== "diterima" && (
+                                <button
+                                  onClick={() => handleApprove(log)}
+                                  className="p-2 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition cursor-pointer"
+                                  title="Terima Pemesanan"
+                                >
+                                  <CheckCircle size={14} />
+                                </button>
+                              )}
+                              {log.status !== "ditolak" && (
+                                <button
+                                  onClick={() => handleReject(log)}
+                                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                                  title="Tolak Pemesanan"
+                                >
+                                  <XCircle size={14} />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-semibold">
+                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-semibold">
                           Tidak ada data penggunaan ditemukan. (Empty State)
                         </td>
                       </tr>
@@ -1212,6 +1411,43 @@ export default function AdminPanel() {
                       <FileDown size={12} />
                       Unduh Template
                     </button>
+                  </div>
+
+                  {/* Import Configuration (Starting Date & Default Lab) */}
+                  <div className="space-y-3.5 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <span className="text-[11px] font-bold text-slate-700 block">Pengaturan Impor Jadwal</span>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Tanggal Awal Minggu (Senin)
+                        </label>
+                        <input
+                          type="date"
+                          value={importWeekStartDate}
+                          onChange={(e) => setImportWeekStartDate(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-xs bg-white"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Default Lab (Jika tidak di berkas)
+                        </label>
+                        <select
+                          value={importDefaultLab}
+                          onChange={(e) => setImportDefaultLab(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-xs bg-white"
+                        >
+                          <option value="">-- Pilih Laboratorium --</option>
+                          {laboratories.map((lab) => (
+                            <option key={lab.id} value={lab.name}>
+                              {lab.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Drag and Drop Zone */}

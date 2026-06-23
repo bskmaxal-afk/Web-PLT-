@@ -14,6 +14,34 @@ export const AppProvider = ({ children }) => {
   // Selected laboratory from card click (TUGAS 2)
   const [selectedLaboratory, setSelectedLaboratory] = useState(null);
 
+  // Notifications for students (when admin approves/rejects their booking)
+  const [notifications, setNotifications] = useState([]);
+
+  // Add a notification
+  const addNotification = (notification) => {
+    setNotifications(prev => [
+      {
+        id: Date.now() + Math.random(),
+        timestamp: new Date().toISOString(),
+        isRead: false,
+        ...notification
+      },
+      ...prev
+    ]);
+  };
+
+  // Mark notification as read
+  const markNotificationRead = (id) => {
+    setNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
+    );
+  };
+
+  // Mark all notifications as read
+  const markAllNotificationsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  };
+
   // User logbook schedules / bookings
   const [mySchedules, setMySchedules] = useState([
     {
@@ -29,7 +57,8 @@ export const AppProvider = ({ children }) => {
       mahasiswa: "Ahmad Rizki",
       nim: "1227050001",
       numberwa: "081234567890",
-      jumlahHadir: 30
+      jumlahHadir: 30,
+      status: "pending"
     },
     {
       id: 2,
@@ -44,7 +73,8 @@ export const AppProvider = ({ children }) => {
       mahasiswa: "Siti Nurhaliza",
       nim: "1227050002",
       numberwa: "082198765432",
-      jumlahHadir: 25
+      jumlahHadir: 25,
+      status: "pending"
     },
     {
       id: 3,
@@ -59,7 +89,8 @@ export const AppProvider = ({ children }) => {
       mahasiswa: "Fikri Haikal",
       nim: "1227050003",
       numberwa: "085345678901",
-      jumlahHadir: 28
+      jumlahHadir: 28,
+      status: "diterima"
     },
     {
       id: 4,
@@ -74,7 +105,8 @@ export const AppProvider = ({ children }) => {
       mahasiswa: "Dewi Lestari",
       nim: "1227050004",
       numberwa: "089876543210",
-      jumlahHadir: 32
+      jumlahHadir: 32,
+      status: "pending"
     },
     {
       id: 5,
@@ -89,7 +121,8 @@ export const AppProvider = ({ children }) => {
       mahasiswa: "Bagus Prasetyo",
       nim: "1227050005",
       numberwa: "087712345678",
-      jumlahHadir: 20
+      jumlahHadir: 20,
+      status: "ditolak"
     },
     {
       id: 6,
@@ -104,7 +137,8 @@ export const AppProvider = ({ children }) => {
       mahasiswa: "Putri Amanda",
       nim: "1227050006",
       numberwa: "081398765432",
-      jumlahHadir: 35
+      jumlahHadir: 35,
+      status: "diterima"
     },
     {
       id: 7,
@@ -119,7 +153,8 @@ export const AppProvider = ({ children }) => {
       mahasiswa: "Rian Hidayat",
       nim: "1227050007",
       numberwa: "081298765432",
-      jumlahHadir: 27
+      jumlahHadir: 27,
+      status: "pending"
     },
     {
       id: 8,
@@ -134,7 +169,8 @@ export const AppProvider = ({ children }) => {
       mahasiswa: "Farhan Maulana",
       nim: "1227050008",
       numberwa: "085298765432",
-      jumlahHadir: 30
+      jumlahHadir: 30,
+      status: "diterima"
     },
     {
       id: 9,
@@ -149,7 +185,8 @@ export const AppProvider = ({ children }) => {
       mahasiswa: "Annisa Fitriani",
       nim: "1227050009",
       numberwa: "082398765432",
-      jumlahHadir: 24
+      jumlahHadir: 24,
+      status: "pending"
     },
     {
       id: 10,
@@ -164,7 +201,8 @@ export const AppProvider = ({ children }) => {
       mahasiswa: "Rizky Fauzi",
       nim: "1227050010",
       numberwa: "085798765432",
-      jumlahHadir: 22
+      jumlahHadir: 22,
+      status: "pending"
     }
   ]);
 
@@ -180,7 +218,12 @@ export const AppProvider = ({ children }) => {
         mySchedules,
         setMySchedules,
         isAdminAuthenticated,
-        setAdminAuthenticated
+        setAdminAuthenticated,
+        notifications,
+        setNotifications,
+        addNotification,
+        markNotificationRead,
+        markAllNotificationsRead
       }}
     >
       {children}

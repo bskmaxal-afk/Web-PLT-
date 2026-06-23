@@ -5,7 +5,7 @@ import { AppContext } from "../../context/AppContext";
 import logoUIN from "../../assets/logoUIN.jpg";
 
 const menus = [
-  { name: "Dashboard", path: "/", icon: LayoutDashboard },
+  { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { name: "Pemesanan Ruang", path: "/booking", icon: CalendarDays },
   { name: "Panel Admin", path: "/admin", icon: ShieldCheck, requiresAdmin: true },
   { name: "Informasi Lab", path: "/laboratories", icon: Info },
