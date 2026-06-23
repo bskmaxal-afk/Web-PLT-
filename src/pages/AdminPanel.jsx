@@ -37,6 +37,7 @@ export default function AdminPanel() {
   const [inputTanggal, setInputTanggal] = useState("");
   const [inputJamMulai, setInputJamMulai] = useState("");
   const [inputJamSelesai, setInputJamSelesai] = useState("");
+  const [inputKelas, setInputKelas] = useState("");
 
   // Mobile sidebar visibility
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -171,7 +172,7 @@ export default function AdminPanel() {
   // Handle Add Schedule (Jadwal Kuliah)
   const handleAddSchedule = (e) => {
     e.preventDefault();
-    if (!inputLab || !inputProdi || !inputMatkul || !inputDosen || !inputTanggal || !inputJamMulai || !inputJamSelesai) {
+    if (!inputLab || !inputProdi || !inputKelas || !inputMatkul || !inputDosen || !inputTanggal || !inputJamMulai || !inputJamSelesai) {
       alert("Semua field wajib diisi!");
       return;
     }
@@ -191,7 +192,7 @@ export default function AdminPanel() {
       jam: timeFormatted,
       dosen: inputDosen,
       prodi: inputProdi,
-      kelas: "-",
+      kelas: inputKelas.trim() || "-",
       matkul: inputMatkul,
       ruang: inputLab,
       tanggalInput: inputTanggal,
@@ -207,6 +208,7 @@ export default function AdminPanel() {
     // Reset form states
     setInputLab("");
     setInputProdi("");
+    setInputKelas("");
     setInputMatkul("");
     setInputDosen("");
     setInputTanggal("");
@@ -1868,7 +1870,7 @@ export default function AdminPanel() {
                       </select>
                     </div>
 
-                    {/* Prodi & Matkul */}
+                    {/* Prodi & Kelas */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
@@ -1885,6 +1887,23 @@ export default function AdminPanel() {
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                          Kelas
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Contoh: TI-4A"
+                          value={inputKelas}
+                          onChange={(e) => setInputKelas(e.target.value)}
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Matkul & Dosen */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                           Mata Kuliah
                         </label>
                         <input
@@ -1896,10 +1915,6 @@ export default function AdminPanel() {
                           className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
                         />
                       </div>
-                    </div>
-
-                    {/* Dosen & Tanggal */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                           Nama Dosen Pengampu
@@ -1913,18 +1928,20 @@ export default function AdminPanel() {
                           className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
                         />
                       </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                          Tanggal Pelaksanaan
-                        </label>
-                        <input
-                          type="date"
-                          required
-                          value={inputTanggal}
-                          onChange={(e) => setInputTanggal(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
-                        />
-                      </div>
+                    </div>
+
+                    {/* Tanggal Pelaksanaan */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        Tanggal Pelaksanaan
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={inputTanggal}
+                        onChange={(e) => setInputTanggal(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
+                      />
                     </div>
 
                     {/* Jam Mulai & Jam Selesai */}
@@ -1962,6 +1979,7 @@ export default function AdminPanel() {
                         onClick={() => {
                           setInputLab("");
                           setInputProdi("");
+                          setInputKelas("");
                           setInputMatkul("");
                           setInputDosen("");
                           setInputTanggal("");

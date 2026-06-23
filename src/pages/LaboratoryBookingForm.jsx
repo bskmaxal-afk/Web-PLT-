@@ -63,6 +63,7 @@ export default function LaboratoryBookingForm() {
   const [formData, setFormData] = useState({
     mahasiswa: "",
     nim: "",
+    kelas: "",
     numberwa: "",
     jumlahHadir: "",
   });
@@ -84,6 +85,13 @@ export default function LaboratoryBookingForm() {
 
   const handleScheduleSelect = (id) => {
     setSelectedScheduleId(id);
+    const sched = mySchedules.find((s) => s.id === parseInt(id, 10));
+    if (sched) {
+      setFormData((prev) => ({
+        ...prev,
+        kelas: sched.kelas && sched.kelas !== "-" ? sched.kelas : prev.kelas || "",
+      }));
+    }
     if (errors.schedule) {
       setErrors((prev) => {
         const next = { ...prev };
@@ -104,6 +112,9 @@ export default function LaboratoryBookingForm() {
     }
     if (!formData.nim.trim()) {
       newErrors.nim = "NIM mahasiswa wajib diisi.";
+    }
+    if (!formData.kelas.trim()) {
+      newErrors.kelas = "Kelas wajib diisi.";
     }
     if (!formData.numberwa.trim()) {
       newErrors.numberwa = "Nomor telepon wajib diisi.";
@@ -138,6 +149,7 @@ export default function LaboratoryBookingForm() {
                 ...s,
                 mahasiswa: formData.mahasiswa.trim(),
                 nim: formData.nim.trim(),
+                kelas: formData.kelas.trim(),
                 numberwa: formData.numberwa.trim(),
                 jumlahHadir: parseInt(formData.jumlahHadir, 10),
                 status: "pending",
@@ -467,6 +479,31 @@ export default function LaboratoryBookingForm() {
                   {errors.nim && (
                     <p className="text-red-500 text-xs font-semibold mt-1 flex items-center gap-1">
                       <AlertCircle size={12} /> {errors.nim}
+                    </p>
+                  )}
+                </div>
+
+                {/* Kelas */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    <span className="flex items-center gap-1.5">
+                      <BookOpen size={11} />
+                      Kelas <span className="text-red-500">*</span>
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    name="kelas"
+                    placeholder="Contoh: TI-4A"
+                    value={formData.kelas}
+                    onChange={handleChange}
+                    className={`w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm bg-slate-50/50 transition ${
+                      errors.kelas ? "border-red-300 bg-red-50/30" : "border-slate-200"
+                    }`}
+                  />
+                  {errors.kelas && (
+                    <p className="text-red-500 text-xs font-semibold mt-1 flex items-center gap-1">
+                      <AlertCircle size={12} /> {errors.kelas}
                     </p>
                   )}
                 </div>
