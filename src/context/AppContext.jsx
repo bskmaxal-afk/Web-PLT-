@@ -1,8 +1,229 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState } from "react";
+import { createContext, useState, useCallback, useEffect } from "react";
 import { labs } from "../data/labs";
+import { getAllSchedules } from "../services/scheduleService";
+import { getAllLogbooks } from "../services/bookingService";
 
 export const AppContext = createContext();
+
+const titleCase = (str) => {
+  if (!str) return "";
+  return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
+
+const parseDateToISO = (dateStr) => {
+  if (!dateStr) return "";
+  if (dateStr.includes("-")) {
+    const parts = dateStr.split("-");
+    if (parts.length === 3 && parts[2].length === 4) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+  }
+  if (dateStr.includes("/")) {
+    const parts = dateStr.split("/");
+    if (parts.length === 3 && parts[2].length === 4) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+  }
+  return dateStr;
+};
+
+/**
+ * Helper: Map backend jadwal object → frontend schedule object.
+ * Ditulis defensif agar tidak crash meski format backend sedikit berbeda.
+ */
+const mapBackendSchedule = (item) => {
+  // Ambil tanggal
+  const tanggal = item.tanggal || item.tanggalnya || item.tanggalInput || "";
+  const isoTanggal = parseDateToISO(tanggal);
+
+  // Hitung nama hari dari tanggal
+  let hari = item.hari || "";
+  if (!hari && isoTanggal) {
+    const daysIndo = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const d = new Date(isoTanggal);
+    if (!isNaN(d.getTime())) {
+      hari = daysIndo[d.getDay()];
+    }
+  }
+
+  // Ambil jam mulai & selesai
+  const jamMulai = item.jam_mulai || item.jammulai || item.jammulainya || "";
+  const jamSelesai = item.jam_selesai || item.jamselesai || item.jamselesainya || "";
+  const jam = jamMulai && jamSelesai ? `${jamMulai} - ${jamSelesai}` : item.jam || "-";
+
+  // Ambil nama lab dari relasi atau fallback
+  let ruang = "Lab Umum";
+  const rawRuang = item.nama_lab || item.namaLab || "";
+  if (rawRuang) {
+    const matchedLab = labs.find(l => l.name.toLowerCase() === rawRuang.toLowerCase());
+    ruang = matchedLab ? matchedLab.name : titleCase(rawRuang);
+  } else if (item.laboratorium) {
+    ruang = item.laboratorium.nama || item.laboratorium.name || item.laboratorium.namaLab || "Lab Umum";
+  } else if (item.lab) {
+    ruang = typeof item.lab === "string" ? item.lab : (item.lab.nama || item.lab.name || "Lab Umum");
+  } else if (item.ruang) {
+    ruang = item.ruang;
+  } else if (item.namalab || item.id_lab) {
+    const labId = item.namalab || item.id_lab;
+    const matchedLab = labs.find(l => l.id === labId || l.id === parseInt(labId, 10));
+    ruang = matchedLab ? matchedLab.name : `Lab ID-${labId}`;
+  }
+
+  // Ambil prodi dan kelas
+  let prodi = item.prodi || item.prodinya || "";
+  let kelas = item.kelas || "";
+  if (item.prodi_kelas) {
+    if (item.prodi_kelas.includes(" - ")) {
+      const parts = item.prodi_kelas.split(" - ");
+      prodi = parts[0];
+      kelas = parts[1];
+    } else if (item.prodi_kelas.includes(" / ")) {
+      const parts = item.prodi_kelas.split(" / ");
+      prodi = parts[0];
+      kelas = parts[1];
+    } else {
+      prodi = item.prodi_kelas;
+      kelas = item.prodi_kelas;
+    }
+  }
+  if (!prodi) prodi = "Umum";
+  if (!kelas) kelas = "-";
+
+  return {
+    id: item.id,
+    _backendId: item.id,
+    _type: "jadwal",
+    hari: hari || "Senin",
+    jam,
+    dosen: item.dosen || item.dosennya || "-",
+    prodi,
+    kelas,
+    matkul: item.matkul || item.matkulnya || item.mata_kuliah || "Mata Kuliah Umum",
+    ruang,
+    tanggalInput: isoTanggal,
+    mahasiswa: "Admin (Penjadwalan)",
+    nim: "-",
+    numberwa: "-",
+    jumlahHadir: 0,
+    status: undefined,
+  };
+};
+
+/**
+ * Helper: Map backend logbook object → frontend booking object.
+ * Melakukan lookup ke schedules list jika field schadule hanya berupa ID angka/string.
+ */
+const mapBackendLogbook = (item, schedules = []) => {
+  // Ambil schedule ID dari data logbook
+  const scheduleId = item.schadule || item.schedule || item.schadule_id || item.schedule_id || null;
+
+  // Cari schedule yang cocok dari schedules array
+  const matchedSchedule = (schedules && scheduleId)
+    ? schedules.find(s => s.id === scheduleId || s._backendId === scheduleId)
+    : null;
+
+  // Prioritaskan objek schedule hasil lookup (sudah dimap), atau nested object di item, atau matchedSchedule
+  const sched = matchedSchedule || 
+                (typeof item.schadule === "object" ? item.schadule : null) || 
+                (typeof item.schedule === "object" ? item.schedule : null) || 
+                (typeof item.jadwal === "object" ? item.jadwal : null) || 
+                {};
+
+  // Tentukan apakah objek schedule sudah dalam format hasil map (punya _type: "jadwal")
+  const isAlreadyMapped = sched._type === "jadwal";
+
+  // Ambil tanggal (prioritaskan dari flat item lalu dari sched)
+  const tanggal = item.tanggal || item.tanggalnya || item.tanggalInput || 
+                  (isAlreadyMapped ? sched.tanggalInput : (sched.tanggal || sched.tanggalnya || ""));
+  const isoTanggal = parseDateToISO(tanggal);
+
+  // Hitung nama hari dari tanggal
+  let hari = item.hari || (isAlreadyMapped ? sched.hari : (sched.hari || ""));
+  if (!hari && isoTanggal) {
+    const daysIndo = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const d = new Date(isoTanggal);
+    if (!isNaN(d.getTime())) {
+      hari = daysIndo[d.getDay()];
+    }
+  }
+
+  // Ambil jam
+  const jamMulai = item.jammulai || item.jammulainya || item.jam_mulai || 
+                    (!isAlreadyMapped ? (sched.jam_mulai || sched.jammulai || sched.jamMulai || "") : "");
+  const jamSelesai = item.jamselesai || item.jamselesainya || item.jam_selesai || 
+                      (!isAlreadyMapped ? (sched.jam_selesai || sched.jamselesai || sched.jamSelesai || "") : "");
+  
+  let jam = "-";
+  if (jamMulai && jamSelesai) {
+    jam = `${jamMulai} - ${jamSelesai}`;
+  } else {
+    jam = item.jam || sched.jam || "-";
+  }
+
+  // Nama ruang / lab
+  let ruang = "Lab Umum";
+  const rawRuang = item.nama_lab || item.namaLab || 
+                    (!isAlreadyMapped ? (sched.nama_lab || sched.namaLab || sched.ruang || "") : sched.ruang);
+  if (rawRuang) {
+    const matchedLab = labs.find(l => l.name.toLowerCase() === rawRuang.toLowerCase());
+    ruang = matchedLab ? matchedLab.name : titleCase(rawRuang);
+  } else if (!isAlreadyMapped) {
+    const labObj = sched.laboratorium || sched.lab || item.laboratorium || item.lab;
+    if (labObj) {
+      ruang = typeof labObj === "string" ? labObj : (labObj.nama || labObj.name || labObj.namaLab || "Lab Umum");
+    } else if (sched.ruang) {
+      ruang = sched.ruang;
+    }
+  }
+
+  // Ambil prodi dan kelas
+  let prodi = item.prodi || item.prodinya || "";
+  let kelas = item.kelas || "";
+  const rawProdiKelas = item.prodi_kelas || sched.prodi_kelas || "";
+  if (rawProdiKelas) {
+    if (rawProdiKelas.includes(" - ")) {
+      const parts = rawProdiKelas.split(" - ");
+      prodi = parts[0];
+      kelas = parts[1];
+    } else if (rawProdiKelas.includes(" / ")) {
+      const parts = rawProdiKelas.split(" / ");
+      prodi = parts[0];
+      kelas = parts[1];
+    } else {
+      if (!prodi) prodi = rawProdiKelas;
+      if (!kelas) kelas = rawProdiKelas;
+    }
+  }
+  if (!prodi) prodi = isAlreadyMapped ? sched.prodi : (sched.prodi || "Umum");
+  if (!kelas) kelas = isAlreadyMapped ? sched.kelas : (sched.kelas || "-");
+
+  // Dosen dan Matkul
+  const dosen = item.dosen || item.dosennya || 
+                (isAlreadyMapped ? sched.dosen : (sched.dosen || sched.dosennya || "-"));
+  const matkul = item.matkul || item.matkulnya || item.mata_kuliah || 
+                 (isAlreadyMapped ? sched.matkul : (sched.matkul || sched.matkulnya || sched.mata_kuliah || "Mata Kuliah Umum"));
+
+  return {
+    id: item.id,
+    _backendId: item.id,
+    _scheduleId: scheduleId || sched.id || sched._backendId || null,
+    _type: "logbook",
+    hari: hari || "Senin",
+    jam,
+    dosen,
+    prodi,
+    kelas,
+    matkul,
+    ruang,
+    tanggalInput: isoTanggal,
+    mahasiswa: item.namaMahasiswa || item.nama_mahasiswa || item.namaKetua || item.nama_ketua || item.mahasiswa || "-",
+    nim: item.nim || "-",
+    numberwa: item.no_wa || item.noWa || item.nomorWa || item.nomor_wa || item.numberwa || "-",
+    jumlahHadir: parseInt(item.jumlah_hadir || item.jumlahHadir || item.jumlahPeserta || item.jumlah_peserta || 0, 10),
+    status: item.status || "pending",
+  };
+};
 
 export const AppProvider = ({ children }) => {
   const [laboratories, setLaboratories] = useState(labs);
@@ -42,169 +263,49 @@ export const AppProvider = ({ children }) => {
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
   };
 
-  // User logbook schedules / bookings
-  const [mySchedules, setMySchedules] = useState([
-    {
-      id: 1,
-      hari: "Senin",
-      jam: "08:00",
-      dosen: "Dr. Budi",
-      prodi: "Teknik Informatika",
-      kelas: "TI-4A",
-      matkul: "Pemrograman Web",
-      ruang: "Lab Programming",
-      tanggalInput: "2026-06-22",
-      mahasiswa: "Ahmad Rizki",
-      nim: "1227050001",
-      numberwa: "081234567890",
-      jumlahHadir: 30,
-      status: "pending"
-    },
-    {
-      id: 2,
-      hari: "Senin",
-      jam: "10:00",
-      dosen: "Dr. Ani",
-      prodi: "Sains Data",
-      kelas: "SD-2B",
-      matkul: "Data Mining",
-      ruang: "Lab Data Sains",
-      tanggalInput: "2026-06-22",
-      mahasiswa: "Siti Nurhaliza",
-      nim: "1227050002",
-      numberwa: "082198765432",
-      jumlahHadir: 25,
-      status: "pending"
-    },
-    {
-      id: 3,
-      hari: "Selasa",
-      jam: "13:00",
-      dosen: "Dr. Rina",
-      prodi: "Teknik Informatika",
-      kelas: "TI-6A",
-      matkul: "Multimedia Lanjutan",
-      ruang: "Lab Multimedia",
-      tanggalInput: "2026-06-21",
-      mahasiswa: "Fikri Haikal",
-      nim: "1227050003",
-      numberwa: "085345678901",
-      jumlahHadir: 28,
-      status: "diterima"
-    },
-    {
-      id: 4,
-      hari: "Rabu",
-      jam: "08:30",
-      dosen: "Riza Fahlevi, M.T.",
-      prodi: "Sistem Informasi",
-      kelas: "SI-4A",
-      matkul: "Basis Data II",
-      ruang: "Lab Sistem Informasi",
-      tanggalInput: "2026-06-18",
-      mahasiswa: "Dewi Lestari",
-      nim: "1227050004",
-      numberwa: "089876543210",
-      jumlahHadir: 32,
-      status: "pending"
-    },
-    {
-      id: 5,
-      hari: "Kamis",
-      jam: "10:30",
-      dosen: "Dr. Irwan Setiawan",
-      prodi: "Matematika",
-      kelas: "MTK-2A",
-      matkul: "Kalkulus",
-      ruang: "Lab Matematika",
-      tanggalInput: "2026-06-15",
-      mahasiswa: "Bagus Prasetyo",
-      nim: "1227050005",
-      numberwa: "087712345678",
-      jumlahHadir: 20,
-      status: "ditolak"
-    },
-    {
-      id: 6,
-      hari: "Jumat",
-      jam: "14:00",
-      dosen: "Dian Permata, M.Kom.",
-      prodi: "Sistem Informasi",
-      kelas: "SI-6B",
-      matkul: "E-Commerce",
-      ruang: "Lab Sistem Informasi",
-      tanggalInput: "2026-06-10",
-      mahasiswa: "Putri Amanda",
-      nim: "1227050006",
-      numberwa: "081398765432",
-      jumlahHadir: 35,
-      status: "diterima"
-    },
-    {
-      id: 7,
-      hari: "Sabtu",
-      jam: "09:00",
-      dosen: "Hendra Wijaya, M.T.",
-      prodi: "Teknik Informatika",
-      kelas: "TI-2C",
-      matkul: "Jaringan Komputer",
-      ruang: "Lab Jaringan Komputer",
-      tanggalInput: "2026-06-05",
-      mahasiswa: "Rian Hidayat",
-      nim: "1227050007",
-      numberwa: "081298765432",
-      jumlahHadir: 27,
-      status: "pending"
-    },
-    {
-      id: 8,
-      hari: "Senin",
-      jam: "08:00",
-      dosen: "Prof. Hermawan",
-      prodi: "Teknik Informatika",
-      kelas: "TI-4B",
-      matkul: "Kecerdasan Buatan",
-      ruang: "Lab Programming",
-      tanggalInput: "2026-05-25",
-      mahasiswa: "Farhan Maulana",
-      nim: "1227050008",
-      numberwa: "085298765432",
-      jumlahHadir: 30,
-      status: "diterima"
-    },
-    {
-      id: 9,
-      hari: "Selasa",
-      jam: "10:00",
-      dosen: "Siti Rahma, M.Sc.",
-      prodi: "Matematika",
-      kelas: "MTK-4B",
-      matkul: "Metode Numerik",
-      ruang: "Lab Matematika",
-      tanggalInput: "2026-05-20",
-      mahasiswa: "Annisa Fitriani",
-      nim: "1227050009",
-      numberwa: "082398765432",
-      jumlahHadir: 24,
-      status: "pending"
-    },
-    {
-      id: 10,
-      hari: "Rabu",
-      jam: "13:00",
-      dosen: "Dr. Ani",
-      prodi: "Sains Data",
-      kelas: "SD-4A",
-      matkul: "Machine Learning",
-      ruang: "Lab Data Sains",
-      tanggalInput: "2026-05-15",
-      mahasiswa: "Rizky Fauzi",
-      nim: "1227050010",
-      numberwa: "085798765432",
-      jumlahHadir: 22,
-      status: "pending"
+  // User logbook schedules / bookings — start empty, filled from backend
+  const [mySchedules, setMySchedules] = useState([]);
+
+  // Loading state for data fetching
+  const [isDataLoading, setIsDataLoading] = useState(false);
+
+  /**
+   * Fetch jadwal + logbook dari backend dan gabungkan ke mySchedules.
+   * Dipanggil setelah admin login berhasil, dan setelah operasi CRUD.
+   */
+  const refreshData = useCallback(async () => {
+    setIsDataLoading(true);
+    try {
+      const [schedRes, logRes] = await Promise.all([
+        getAllSchedules(),
+        getAllLogbooks(),
+      ]);
+
+      const schedules = schedRes.success
+        ? schedRes.data.map(mapBackendSchedule)
+        : [];
+
+      const logbooks = logRes.success
+        ? logRes.data.map(item => mapBackendLogbook(item, schedules))
+        : [];
+
+      // Gabungkan: logbook entries menimpa jadwal yang sudah di-booking.
+      // Jadwal yang sudah punya logbook → tampilkan versi logbook-nya.
+      const bookedScheduleIds = new Set(logbooks.map(lb => lb._scheduleId).filter(lbId => lbId !== null && lbId !== undefined));
+      const unbookedSchedules = schedules.filter(s => !bookedScheduleIds.has(s._backendId) && !bookedScheduleIds.has(s.id));
+
+      setMySchedules([...logbooks, ...unbookedSchedules]);
+    } catch (err) {
+      console.error("Gagal mengambil data dari server:", err);
+    } finally {
+      setIsDataLoading(false);
     }
-  ]);
+  }, []);
+
+  // Fetch initial data on mount (sehingga data langsung terisi di sisi mahasiswa dan admin)
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
 
   return (
     <AppContext.Provider
@@ -223,7 +324,9 @@ export const AppProvider = ({ children }) => {
         setNotifications,
         addNotification,
         markNotificationRead,
-        markAllNotificationsRead
+        markAllNotificationsRead,
+        refreshData,
+        isDataLoading,
       }}
     >
       {children}

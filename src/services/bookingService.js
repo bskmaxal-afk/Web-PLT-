@@ -1,36 +1,84 @@
 import API from "./api";
 
 /**
- * Submit a lab booking form to the backend.
- * Maps frontend field names to API-expected field names.
+ * Submit logbook / booking mahasiswa.
+ * POST /post/logbook
  *
- * @param {object} formData — raw form data from LaboratoryBookingForm
+ * @param {object} data
+ * @param {number} data.scheduleId - ID jadwal perkuliahan (schadule.id)
+ * @param {string} data.namaKetua - Nama mahasiswa penanggung jawab
+ * @param {string} data.nim - NIM mahasiswa
+ * @param {string} data.kelas - Kelas mahasiswa
+ * @param {number} data.jumlahPeserta - Jumlah mahasiswa hadir
+ * @param {string} data.nomorWa - Nomor WhatsApp
  * @returns {Promise<{ success: boolean, message?: string, data?: any }>}
  */
-export const submitBooking = async (formData) => {
+export const submitBooking = async (data) => {
   try {
-    // Map payload to match API expected field names
     const payload = {
-      namalab: parseInt(formData.namalab, 10),
-      namaKetua: formData.namaKetua.trim(),
-      numberWa: formData.numberwa.trim(),       // API expects capital W
-      Terjadwal: formData.terjadwal,             // API expects capital T
-      matkul: (formData.matkul || "").trim() || "bukan lab pelajaran",
-      nim: (formData.nim || "").trim() || "none",
-      dosen: (formData.dosen || "").trim() || "none",
-      jumlahPeserta: parseInt(formData.jumlahPeserta, 10),
-      tanggalKegiatan: formData.tanggalKegiatan,
-      jamMasuk: formData.jamMasuk,
-      keterangan: formData.keterangan.trim(),
+      schadule: parseInt(data.scheduleId, 10),
+      namaKetua: data.namaKetua.trim(),
+      nim: data.nim.trim(),
+      kelas: data.kelas.trim(),
+      jumlahPeserta: parseInt(data.jumlahPeserta, 10),
+      nomorWa: data.nomorWa.trim(),
     };
-
-    const response = await API.post("/post/form", payload);
+    const response = await API.post("/post/logbook", payload);
     return { success: true, data: response.data };
   } catch (error) {
     const message =
       error.response?.data?.message ||
+      error.response?.data?.massage ||
       error.response?.data?.error ||
-      "Gagal mengirim pengajuan. Silakan coba lagi.";
+      "Gagal mengirim pemesanan. Silakan coba lagi.";
     return { success: false, message };
   }
 };
+
+/**
+ * Ambil semua data logbook (Protected - butuh JWT).
+ * GET /get/logbook
+ *
+ * @returns {Promise<{ success: boolean, data?: Array, message?: string }>}
+ */
+export const getAllLogbooks = async () => {
+  try {
+    const response = await API.get("/get/logbook");
+    const data = Array.isArray(response.data)
+      ? response.data
+      : response.data?.message || response.data?.data || response.data?.results || [];
+    return { success: true, data };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Gagal memuat data logbook. Silakan coba lagi.";
+    return { success: false, message };
+  }
+};
+
+/**
+ * Update status booking / logbook (Admin).
+ * POST /post/status
+ *
+ * @param {number|string} id - ID logbook
+ * @param {'diterima'|'ditolak'} status
+ * @returns {Promise<{ success: boolean, message?: string }>}
+ */
+export const updateBookingStatus = async (id, status) => {
+  try {
+    const payload = {
+      id: parseInt(id, 10),
+      status,
+    };
+    await API.post("/post/status", payload);
+    return { success: true };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Gagal memperbarui status pemesanan. Silakan coba lagi.";
+    return { success: false, message };
+  }
+};
+

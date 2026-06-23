@@ -1,6 +1,7 @@
-import { useState, useContext, useMemo } from "react";
+import { useState, useContext, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
+import { submitBooking } from "../services/bookingService";
 import {
   ClipboardList, Send, AlertCircle, Calendar, Clock, BookOpen,
   User, Hash, Phone, Users, MapPin, CheckCircle, Search, Filter, X
@@ -13,7 +14,12 @@ export default function LaboratoryBookingForm() {
     setSelectedLaboratory,
     mySchedules,
     setMySchedules,
+    refreshData,
   } = useContext(AppContext);
+
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
 
   // Pre-fill lab name from dashboard click
   const preselectedLabName = selectedLaboratory?.name || "";
@@ -135,37 +141,39 @@ export default function LaboratoryBookingForm() {
     return isValid;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setMySchedules(
-        mySchedules.map((s) =>
-          s.id === parseInt(selectedScheduleId, 10)
-            ? {
-                ...s,
-                mahasiswa: formData.mahasiswa.trim(),
-                nim: formData.nim.trim(),
-                kelas: formData.kelas.trim(),
-                numberwa: formData.numberwa.trim(),
-                jumlahHadir: parseInt(formData.jumlahHadir, 10),
-                status: "pending",
-              }
-            : s
-        )
-      );
+    try {
+      // Ambil backend ID dari jadwal yang dipilih
+      const scheduleBackendId = selectedSchedule?._backendId || selectedSchedule?.id;
 
-      setSelectedLaboratory(null);
+      const result = await submitBooking({
+        scheduleId: scheduleBackendId,
+        namaKetua: formData.mahasiswa.trim(),
+        nim: formData.nim.trim(),
+        kelas: formData.kelas.trim(),
+        jumlahPeserta: parseInt(formData.jumlahHadir, 10),
+        nomorWa: formData.numberwa.trim(),
+      });
+
+      if (result.success) {
+        setSelectedLaboratory(null);
+        alert(
+          `Pemesanan ${selectedSchedule?.ruang} berhasil dikirim!\nStatus: Menunggu konfirmasi admin.\nPantau notifikasi di ikon 🔔 di atas.`
+        );
+        navigate("/dashboard");
+      } else {
+        alert(`Gagal mengirim pemesanan: ${result.message}`);
+      }
+    } catch (err) {
+      alert("Gagal menghubungi server. Periksa koneksi Anda.");
+    } finally {
       setIsSubmitting(false);
-
-      alert(
-        `Pemesanan ${selectedSchedule?.ruang} berhasil dikirim!\nStatus: Menunggu konfirmasi admin.\nPantau notifikasi di ikon 🔔 di atas.`
-      );
-      navigate("/dashboard");
-    }, 600);
+    }
   };
 
   return (

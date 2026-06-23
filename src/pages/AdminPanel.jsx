@@ -8,6 +8,10 @@ import {
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import { loginAdmin, logoutAdmin } from "../services/authService";
+import { createSchedule } from "../services/scheduleService";
+import { deleteEntry } from "../services/historyService";
+import { updateBookingStatus } from "../services/bookingService";
 
 export default function AdminPanel() {
   const { 
@@ -16,7 +20,9 @@ export default function AdminPanel() {
     mySchedules, 
     setMySchedules,
     laboratories,
-    addNotification
+    addNotification,
+    refreshData,
+    isDataLoading
   } = useContext(AppContext);
 
   // Auth local states
@@ -71,21 +77,7 @@ export default function AdminPanel() {
   const [filterProdi, setFilterProdi] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [selectedLogIds, setSelectedLogIds] = useState([]);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [addFormData, setAddFormData] = useState({
-    hari: "Senin",
-    jam: "08:00 - 09:40",
-    dosen: "",
-    prodi: "Teknik Informatika",
-    kelas: "",
-    matkul: "",
-    ruang: "Lab Programming",
-    mahasiswa: "",
-    nim: "",
-    numberwa: "",
-    jumlahHadir: 30,
-    status: "diterima"
-  });
+
   
   const formatWhatsAppNumber = (num) => {
     if (!num) return "";
@@ -123,9 +115,7 @@ export default function AdminPanel() {
     jumlahHadir: ""
   });
 
-  const ADMIN_USERNAME = "admin";
-  const ADMIN_PASSWORD = "admin123";
-  const BASE_TODAY = "2026-06-22"; // baseline date for today in the mock system
+  const BASE_TODAY = new Date().toISOString().split('T')[0]; // tanggal hari ini dinamis
 
   // Date math utilities
   const isWithinLastDays = (dateStr, days) => {
@@ -151,92 +141,118 @@ export default function AdminPanel() {
   // Recent bookings for Dashboard tab
   const recentUsage = [...mySchedules].slice(0, 5);
 
-  // Handle Login submission
-  const handleLogin = (e) => {
+  // Handle Login submission via backend API
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    setTimeout(() => {
-      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    try {
+      const result = await loginAdmin({ username, password });
+      if (result.success) {
         setAdminAuthenticated(true);
         setUsername("");
         setPassword("");
+        // Fetch data dari backend setelah login berhasil
+        await refreshData();
       } else {
-        setError("Username atau password salah!");
+        setError(result.message || "Username atau password salah!");
       }
+    } catch (err) {
+      setError("Gagal menghubungi server. Periksa koneksi Anda.");
+    } finally {
       setIsLoading(false);
-    }, 600);
+    }
   };
 
-  // Handle Add Schedule (Jadwal Kuliah)
-  const handleAddSchedule = (e) => {
+  // Handle Add Schedule (Jadwal Kuliah) via backend API
+  const handleAddSchedule = async (e) => {
     e.preventDefault();
     if (!inputLab || !inputProdi || !inputKelas || !inputMatkul || !inputDosen || !inputTanggal || !inputJamMulai || !inputJamSelesai) {
       alert("Semua field wajib diisi!");
       return;
     }
 
-    // 1. Calculate day name in Indonesian
-    const dateObj = new Date(inputTanggal);
-    const daysIndo = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-    const dayName = daysIndo[dateObj.getDay()];
+    // Cari ID lab berdasarkan nama lab yang dipilih
+    const selectedLabObj = laboratories.find(l => l.name === inputLab);
+    const labId = selectedLabObj ? selectedLabObj.id : 1;
 
-    // 2. Format time
-    const timeFormatted = `${inputJamMulai} - ${inputJamSelesai}`;
+    try {
+      const result = await createSchedule({
+        labId,
+        prodi: inputProdi,
+        matkul: inputMatkul,
+        dosen: inputDosen,
+        tanggal: inputTanggal,
+        jamMulai: inputJamMulai,
+        jamSelesai: inputJamSelesai,
+      });
 
-    // 3. Create schedule object
-    const newSchedule = {
-      id: Date.now(),
-      hari: dayName,
-      jam: timeFormatted,
-      dosen: inputDosen,
-      prodi: inputProdi,
-      kelas: inputKelas.trim() || "-",
-      matkul: inputMatkul,
-      ruang: inputLab,
-      tanggalInput: inputTanggal,
-      mahasiswa: "Admin (Penjadwalan)",
-      nim: "-",
-      numberwa: "-",
-      jumlahHadir: 0
-    };
-
-    setMySchedules([newSchedule, ...mySchedules]);
-    alert("Jadwal Kuliah berhasil dibuat!");
-
-    // Reset form states
-    setInputLab("");
-    setInputProdi("");
-    setInputKelas("");
-    setInputMatkul("");
-    setInputDosen("");
-    setInputTanggal("");
-    setInputJamMulai("");
-    setInputJamSelesai("");
-
-    // Redirect to Data Penggunaan (History log)
-    setActiveTab("data-penggunaan");
+      if (result.success) {
+        alert("Jadwal Kuliah berhasil dibuat!");
+        // Reset form states
+        setInputLab("");
+        setInputProdi("");
+        setInputKelas("");
+        setInputMatkul("");
+        setInputDosen("");
+        setInputTanggal("");
+        setInputJamMulai("");
+        setInputJamSelesai("");
+        // Refresh data dari backend
+        await refreshData();
+        setActiveTab("data-penggunaan");
+      } else {
+        alert(`Gagal membuat jadwal: ${result.message}`);
+      }
+    } catch (err) {
+      alert("Gagal menghubungi server. Periksa koneksi Anda.");
+    }
   };
 
-  // Handle Logout
+  // Handle Logout — clear token dari localStorage
   const handleLogout = () => {
     if (confirm("Apakah Anda yakin ingin keluar dari Panel Admin?")) {
+      logoutAdmin();
       setAdminAuthenticated(false);
+      setMySchedules([]);
       setActiveTab("dashboard");
     }
   };
 
-  // Delete Log
-  const handleDeleteLog = (id) => {
-    if (confirm("Apakah Anda yakin ingin menghapus data log ini?")) {
+  // Delete Log via backend API
+  const handleDeleteLog = async (id) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus data log ini?")) return;
+
+    // Cari item untuk menentukan apakah ini logbook atau jadwal
+    const item = mySchedules.find(s => s.id === id);
+    if (item && item._backendId) {
+      try {
+        const result = await deleteEntry(item._backendId);
+        if (result.success) {
+          alert("Data berhasil dihapus.");
+          await refreshData();
+        } else {
+          alert(`Gagal menghapus: ${result.message}`);
+        }
+      } catch (err) {
+        alert("Gagal menghubungi server. Periksa koneksi Anda.");
+      }
+    } else {
+      // Fallback: hapus dari state lokal saja jika tidak memiliki backend ID
       setMySchedules(mySchedules.filter(s => s.id !== id));
       alert("Data berhasil dihapus.");
     }
   };
 
   // Approve booking (Terima) - adds notification to student
-  const handleApprove = (log) => {
+  const handleApprove = async (log) => {
+    const result = await updateBookingStatus(log.id, "diterima");
+    if (!result.success) {
+      alert(`Gagal menyetujui pemesanan: ${result.message}`);
+      return;
+    }
+
     setMySchedules(mySchedules.map(s =>
       s.id === log.id ? { ...s, status: "diterima" } : s
     ));
@@ -255,8 +271,14 @@ export default function AdminPanel() {
   };
 
   // Reject booking (Tolak) - adds notification to student
-  const handleReject = (log) => {
+  const handleReject = async (log) => {
     const alasan = prompt(`Masukkan alasan penolakan untuk ${log.mahasiswa || "mahasiswa"} (opsional):`) ?? "";
+    const result = await updateBookingStatus(log.id, "ditolak");
+    if (!result.success) {
+      alert(`Gagal menolak pemesanan: ${result.message}`);
+      return;
+    }
+
     setMySchedules(mySchedules.map(s =>
       s.id === log.id ? { ...s, status: "ditolak" } : s
     ));
@@ -309,11 +331,17 @@ export default function AdminPanel() {
   };
 
   // Bulk Approve (Terima Terpilih)
-  const handleBulkApprove = () => {
+  const handleBulkApprove = async () => {
     if (selectedLogIds.length === 0) return;
     if (confirm(`Apakah Anda yakin ingin MENERIMA ${selectedLogIds.length} pemesanan terpilih?`)) {
       const selectedLogs = mySchedules.filter(s => selectedLogIds.includes(s.id));
       
+      const results = await Promise.all(selectedLogs.map(log => updateBookingStatus(log.id, "diterima")));
+      const failed = results.filter(r => !r.success);
+      if (failed.length > 0) {
+        alert(`Gagal memproses beberapa pemesanan (${failed.length} gagal).`);
+      }
+
       setMySchedules(mySchedules.map(s =>
         selectedLogIds.includes(s.id) ? { ...s, status: "diterima" } : s
       ));
@@ -333,16 +361,22 @@ export default function AdminPanel() {
       });
 
       setSelectedLogIds([]);
-      alert(`✅ Berhasil menerima ${selectedLogs.length} pemesanan.`);
+      alert(`✅ Berhasil menerima ${selectedLogs.length - failed.length} pemesanan.`);
     }
   };
 
   // Bulk Reject (Tolak Terpilih)
-  const handleBulkReject = () => {
+  const handleBulkReject = async () => {
     if (selectedLogIds.length === 0) return;
     const alasan = prompt(`Masukkan alasan penolakan untuk ${selectedLogIds.length} pemesanan terpilih (opsional):`) ?? "";
     if (confirm(`Apakah Anda yakin ingin MENOLAK ${selectedLogIds.length} pemesanan terpilih?`)) {
       const selectedLogs = mySchedules.filter(s => selectedLogIds.includes(s.id));
+
+      const results = await Promise.all(selectedLogs.map(log => updateBookingStatus(log.id, "ditolak")));
+      const failed = results.filter(r => !r.success);
+      if (failed.length > 0) {
+        alert(`Gagal memproses penolakan beberapa pemesanan (${failed.length} gagal).`);
+      }
 
       setMySchedules(mySchedules.map(s =>
         selectedLogIds.includes(s.id) ? { ...s, status: "ditolak" } : s
@@ -364,7 +398,7 @@ export default function AdminPanel() {
       });
 
       setSelectedLogIds([]);
-      alert(`❌ Berhasil menolak ${selectedLogs.length} pemesanan.`);
+      alert(`❌ Berhasil menolak ${selectedLogs.length - failed.length} pemesanan.`);
     }
   };
 
@@ -378,34 +412,7 @@ export default function AdminPanel() {
     }
   };
 
-  // Save manual added usage log
-  const handleSaveAddManual = (e) => {
-    e.preventDefault();
-    const newLog = {
-      ...addFormData,
-      id: Date.now() + Math.random(),
-      jumlahHadir: parseInt(addFormData.jumlahHadir, 10) || 1,
-      tanggalInput: addFormData.tanggalInput || new Date().toISOString().split('T')[0]
-    };
-    setMySchedules([newLog, ...mySchedules]);
-    setIsAddModalOpen(false);
-    // Reset form data
-    setAddFormData({
-      hari: "Senin",
-      jam: "08:00 - 09:40",
-      dosen: "",
-      prodi: "Teknik Informatika",
-      kelas: "",
-      matkul: "",
-      ruang: "Lab Programming",
-      mahasiswa: "",
-      nim: "",
-      numberwa: "",
-      jumlahHadir: 30,
-      status: "diterima"
-    });
-    alert("✅ Data penggunaan baru berhasil ditambahkan.");
-  };
+
 
   // Data Penggunaan Filtered Output
   const filteredUsage = mySchedules.filter((log) => {
@@ -872,12 +879,49 @@ export default function AdminPanel() {
     reader.readAsArrayBuffer(file);
   };
 
-  // Save imported rows to context schedules state
-  const confirmImport = () => {
+  // Save imported rows — kirim ke backend satu per satu via POST /post/formadmin
+  const confirmImport = async () => {
     if (importedSchedules.length === 0) return;
-    
-    setMySchedules([...importedSchedules, ...mySchedules]);
-    alert(`${importedSchedules.length} Jadwal Kuliah berhasil diimpor otomatis!`);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const sched of importedSchedules) {
+      // Cari ID lab berdasarkan nama ruang
+      const matchedLab = laboratories.find(l => l.name === sched.ruang);
+      const labId = matchedLab ? matchedLab.id : 1;
+
+      // Parse jam mulai & selesai dari format "HH:MM - HH:MM"
+      let jamMulai = "08:00";
+      let jamSelesai = "10:00";
+      if (sched.jam && sched.jam.includes("-")) {
+        const parts = sched.jam.split("-").map(s => s.trim());
+        jamMulai = parts[0] || "08:00";
+        jamSelesai = parts[1] || "10:00";
+      }
+
+      try {
+        const result = await createSchedule({
+          labId,
+          prodi: sched.prodi || "Umum",
+          matkul: sched.matkul || "Mata Kuliah Umum",
+          dosen: sched.dosen || "Dosen",
+          tanggal: sched.tanggalInput || BASE_TODAY,
+          jamMulai,
+          jamSelesai,
+        });
+        if (result.success) successCount++;
+        else failCount++;
+      } catch {
+        failCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      await refreshData();
+    }
+
+    alert(`${successCount} Jadwal berhasil diimpor.${failCount > 0 ? ` ${failCount} gagal.` : ""}`);
     setImportedSchedules([]);
     setImportFileName("");
     setActiveTab("data-penggunaan");
@@ -1273,14 +1317,6 @@ export default function AdminPanel() {
                   <option value="ditolak">Ditolak</option>
                 </select>
               </div>
-
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition duration-200 cursor-pointer shadow-xs shrink-0 w-full lg:w-auto"
-              >
-                <Plus size={14} />
-                Tambah Data Manual
-              </button>
             </div>
 
             {/* Table */}
@@ -2284,213 +2320,7 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* ==================== MODAL: TAMBAH DATA MANUAL ==================== */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden my-8 animate-fade-in">
-            {/* Header */}
-            <div className="p-6 text-white flex items-center justify-between" style={{ backgroundColor: "#4b8fca" }}>
-              <div className="flex items-center gap-3">
-                <Plus size={20} />
-                <h3 className="font-bold text-base font-display">Tambah Data Penggunaan Manual</h3>
-              </div>
-              <button 
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-white/80 hover:text-white p-1 hover:bg-white/10 rounded-lg transition"
-              >
-                <X size={18} />
-              </button>
-            </div>
 
-            {/* Form */}
-            <form onSubmit={handleSaveAddManual}>
-              <div className="p-6 space-y-4 text-xs max-h-[60vh] overflow-y-auto">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Hari</label>
-                    <select
-                      value={addFormData.hari}
-                      onChange={(e) => setAddFormData({ ...addFormData, hari: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
-                    >
-                      {listHari.map(d => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Jam (e.g. 08:00 - 09:40)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 08:00 - 09:40"
-                      value={addFormData.jam}
-                      onChange={(e) => setAddFormData({ ...addFormData, jam: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Laboratorium</label>
-                    <select
-                      value={addFormData.ruang}
-                      onChange={(e) => setAddFormData({ ...addFormData, ruang: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
-                    >
-                      {laboratories && laboratories.length > 0 ? (
-                        laboratories.map(lab => (
-                          <option key={lab.id} value={lab.name}>{lab.name}</option>
-                        ))
-                      ) : (
-                        <>
-                          <option value="Lab Programming">Lab Programming</option>
-                          <option value="Lab Data Sains">Lab Data Sains</option>
-                          <option value="Lab Multimedia">Lab Multimedia</option>
-                          <option value="Lab Sistem Informasi">Lab Sistem Informasi</option>
-                          <option value="Lab Matematika">Lab Matematika</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Status Awal</label>
-                    <select
-                      value={addFormData.status}
-                      onChange={(e) => setAddFormData({ ...addFormData, status: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
-                    >
-                      <option value="diterima">Diterima (Langsung Setujui)</option>
-                      <option value="pending">Pending (Perlu Konfirmasi)</option>
-                      <option value="ditolak">Ditolak</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nama Dosen</label>
-                  <input
-                    type="text"
-                    value={addFormData.dosen}
-                    onChange={(e) => setAddFormData({ ...addFormData, dosen: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Prodi</label>
-                    <select
-                      value={addFormData.prodi}
-                      onChange={(e) => setAddFormData({ ...addFormData, prodi: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
-                    >
-                      {listProdi.map(p => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Kelas</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. TI-4A"
-                      value={addFormData.kelas}
-                      onChange={(e) => setAddFormData({ ...addFormData, kelas: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Mata Kuliah</label>
-                  <input
-                    type="text"
-                    value={addFormData.matkul}
-                    onChange={(e) => setAddFormData({ ...addFormData, matkul: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nama Mahasiswa (PJ)</label>
-                    <input
-                      type="text"
-                      value={addFormData.mahasiswa}
-                      onChange={(e) => setAddFormData({ ...addFormData, mahasiswa: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">NIM</label>
-                    <input
-                      type="text"
-                      value={addFormData.nim}
-                      onChange={(e) => setAddFormData({ ...addFormData, nim: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">No WhatsApp</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 0812345678"
-                      value={addFormData.numberwa}
-                      onChange={(e) => setAddFormData({ ...addFormData, numberwa: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Jumlah Hadir</label>
-                    <input
-                      type="number"
-                      value={addFormData.jumlahHadir}
-                      onChange={(e) => setAddFormData({ ...addFormData, jumlahHadir: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tanggal Penggunaan</label>
-                  <input
-                    type="date"
-                    value={addFormData.tanggalInput}
-                    onChange={(e) => setAddFormData({ ...addFormData, tanggalInput: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold transition text-xs cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-white rounded-xl font-bold transition text-xs shadow-md cursor-pointer bg-blue-600 hover:bg-blue-700"
-                >
-                  Simpan Data
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
     </div>
   );
