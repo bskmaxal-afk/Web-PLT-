@@ -1,13 +1,14 @@
 import { useState, useEffect, useContext } from "react";
-import { Menu, Calendar } from "lucide-react";
+import { Menu, Calendar, ShieldCheck, Lock, LogOut } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
+import { Link } from "react-router-dom";
 
 /**
- * Navbar — Top navigation bar with date/time display.
+ * Navbar — Top navigation bar with date/time display and Admin access.
  */
 export default function Navbar() {
   const [time, setTime] = useState(new Date());
-  const { setSidebarOpen } = useContext(AppContext);
+  const { setSidebarOpen, isAdminAuthenticated, setAdminAuthenticated } = useContext(AppContext);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -67,12 +68,48 @@ export default function Navbar() {
       {/* Spacer for desktop */}
       <div className="hidden lg:block"></div>
 
-      {/* Date Time */}
+      {/* Date Time & Admin button */}
       <div className="navbar-right">
         <div className="datetime-display">
           <Calendar size={15} className="text-slate-500" />
           <span>{formatIndonesianDate(time)}</span>
         </div>
+
+        {/* Separator */}
+        <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
+
+        {/* Admin Access Button */}
+        {isAdminAuthenticated ? (
+          <div className="flex items-center gap-2">
+            <Link
+              to="/admin"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-semibold hover:bg-emerald-100 transition shadow-xs"
+            >
+              <ShieldCheck size={14} />
+              <span className="hidden sm:inline">Panel Admin</span>
+              <span className="sm:hidden">Admin</span>
+            </Link>
+            <button
+              onClick={() => {
+                if (confirm("Apakah Anda yakin ingin keluar dari sesi admin?")) {
+                  setAdminAuthenticated(false);
+                }
+              }}
+              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition cursor-pointer"
+              title="Logout Admin"
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
+        ) : (
+          <Link
+            to="/admin"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-xs font-semibold transition shadow-xs cursor-pointer"
+          >
+            <Lock size={13} />
+            <span>Masuk Admin</span>
+          </Link>
+        )}
       </div>
     </header>
   );
