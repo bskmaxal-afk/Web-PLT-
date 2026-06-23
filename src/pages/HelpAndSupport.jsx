@@ -41,7 +41,7 @@ export default function HelpAndSupport() {
         {/* Quick Contact Links */}
         <div className="md:col-span-1 space-y-4">
           <a
-            href="https://wa.me/628123456789"
+            href="https://wa.me/6282114720105"
             target="_blank"
             rel="noopener noreferrer"
             className="p-4 bg-white border border-gray-100 rounded-xl flex items-center gap-3 hover:border-green-200 hover:shadow-xs transition duration-200 cursor-pointer block"
