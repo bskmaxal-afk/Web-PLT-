@@ -3,7 +3,7 @@ import { AppContext } from "../context/AppContext";
 import { 
   Lock, Eye, EyeOff, LayoutDashboard, FileText, BarChart2, LogOut,
   Search, Filter, Plus, Edit, Trash2, Info, X, Check, Download, Printer, Calendar, Clock, Award,
-  Upload, FileSpreadsheet, FileDown, CheckCircle, XCircle, AlertCircle
+  Upload, FileSpreadsheet, FileDown, CheckCircle, XCircle, AlertCircle, MessageCircle
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
@@ -68,6 +68,33 @@ export default function AdminPanel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterHari, setFilterHari] = useState("");
   const [filterProdi, setFilterProdi] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [selectedLogIds, setSelectedLogIds] = useState([]);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [addFormData, setAddFormData] = useState({
+    hari: "Senin",
+    jam: "08:00 - 09:40",
+    dosen: "",
+    prodi: "Teknik Informatika",
+    kelas: "",
+    matkul: "",
+    ruang: "Lab Programming",
+    mahasiswa: "",
+    nim: "",
+    numberwa: "",
+    jumlahHadir: 30,
+    status: "diterima"
+  });
+  
+  const formatWhatsAppNumber = (num) => {
+    if (!num) return "";
+    let clean = num.toString().replace(/\D/g, "");
+    if (clean.startsWith("0")) {
+      clean = "62" + clean.slice(1);
+    }
+    return clean;
+  };
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
@@ -279,6 +306,105 @@ export default function AdminPanel() {
     alert("Data berhasil diperbarui.");
   };
 
+  // Bulk Approve (Terima Terpilih)
+  const handleBulkApprove = () => {
+    if (selectedLogIds.length === 0) return;
+    if (confirm(`Apakah Anda yakin ingin MENERIMA ${selectedLogIds.length} pemesanan terpilih?`)) {
+      const selectedLogs = mySchedules.filter(s => selectedLogIds.includes(s.id));
+      
+      setMySchedules(mySchedules.map(s =>
+        selectedLogIds.includes(s.id) ? { ...s, status: "diterima" } : s
+      ));
+
+      selectedLogs.forEach(log => {
+        addNotification({
+          type: "diterima",
+          title: "Pemesanan Laboratorium Diterima! ✅",
+          message: `Halo ${log.mahasiswa || "Mahasiswa"}! Pemesanan ${log.ruang} untuk mata kuliah "${log.matkul}" pada ${log.hari}, ${log.jam} telah DITERIMA oleh admin. Selamat menggunakan laboratorium!`,
+          mahasiswa: log.mahasiswa,
+          nim: log.nim,
+          ruang: log.ruang,
+          matkul: log.matkul,
+          hari: log.hari,
+          jam: log.jam,
+        });
+      });
+
+      setSelectedLogIds([]);
+      alert(`✅ Berhasil menerima ${selectedLogs.length} pemesanan.`);
+    }
+  };
+
+  // Bulk Reject (Tolak Terpilih)
+  const handleBulkReject = () => {
+    if (selectedLogIds.length === 0) return;
+    const alasan = prompt(`Masukkan alasan penolakan untuk ${selectedLogIds.length} pemesanan terpilih (opsional):`) ?? "";
+    if (confirm(`Apakah Anda yakin ingin MENOLAK ${selectedLogIds.length} pemesanan terpilih?`)) {
+      const selectedLogs = mySchedules.filter(s => selectedLogIds.includes(s.id));
+
+      setMySchedules(mySchedules.map(s =>
+        selectedLogIds.includes(s.id) ? { ...s, status: "ditolak" } : s
+      ));
+
+      selectedLogs.forEach(log => {
+        addNotification({
+          type: "ditolak",
+          title: "Pemesanan Laboratorium Ditolak ❌",
+          message: `Halo ${log.mahasiswa || "Mahasiswa"}! Mohon maaf, pemesanan ${log.ruang} untuk mata kuliah "${log.matkul}" pada ${log.hari}, ${log.jam} telah DITOLAK oleh admin.${alasan ? ` Alasan: ${alasan}` : ""} Silakan hubungi admin untuk informasi lebih lanjut.`,
+          mahasiswa: log.mahasiswa,
+          nim: log.nim,
+          ruang: log.ruang,
+          matkul: log.matkul,
+          hari: log.hari,
+          jam: log.jam,
+          alasan: alasan || "",
+        });
+      });
+
+      setSelectedLogIds([]);
+      alert(`❌ Berhasil menolak ${selectedLogs.length} pemesanan.`);
+    }
+  };
+
+  // Bulk Delete (Hapus Terpilih)
+  const handleBulkDelete = () => {
+    if (selectedLogIds.length === 0) return;
+    if (confirm(`Apakah Anda yakin ingin MENGHAPUS ${selectedLogIds.length} log penggunaan terpilih?`)) {
+      setMySchedules(mySchedules.filter(s => !selectedLogIds.includes(s.id)));
+      setSelectedLogIds([]);
+      alert("✅ Berhasil menghapus log terpilih.");
+    }
+  };
+
+  // Save manual added usage log
+  const handleSaveAddManual = (e) => {
+    e.preventDefault();
+    const newLog = {
+      ...addFormData,
+      id: Date.now() + Math.random(),
+      jumlahHadir: parseInt(addFormData.jumlahHadir, 10) || 1,
+      tanggalInput: addFormData.tanggalInput || new Date().toISOString().split('T')[0]
+    };
+    setMySchedules([newLog, ...mySchedules]);
+    setIsAddModalOpen(false);
+    // Reset form data
+    setAddFormData({
+      hari: "Senin",
+      jam: "08:00 - 09:40",
+      dosen: "",
+      prodi: "Teknik Informatika",
+      kelas: "",
+      matkul: "",
+      ruang: "Lab Programming",
+      mahasiswa: "",
+      nim: "",
+      numberwa: "",
+      jumlahHadir: 30,
+      status: "diterima"
+    });
+    alert("✅ Data penggunaan baru berhasil ditambahkan.");
+  };
+
   // Data Penggunaan Filtered Output
   const filteredUsage = mySchedules.filter((log) => {
     const matchesSearch = 
@@ -290,8 +416,9 @@ export default function AdminPanel() {
     
     const matchesHari = filterHari ? log.hari === filterHari : true;
     const matchesProdi = filterProdi ? log.prodi === filterProdi : true;
+    const matchesStatus = filterStatus ? log.status === filterStatus : true;
 
-    return matchesSearch && matchesHari && matchesProdi;
+    return matchesSearch && matchesHari && matchesProdi && matchesStatus;
   });
 
   // Data Penggunaan Pagination
@@ -1026,57 +1153,132 @@ export default function AdminPanel() {
         {/* ==================== TAB: DATA PENGGUNAAN ==================== */}
         {activeTab === "data-penggunaan" && (
           <div className="space-y-6 print:hidden">
-            <div>
-              <h1 className="text-2xl font-extrabold text-slate-800 font-display">Data Penggunaan Laboratorium</h1>
-              <p className="text-xs text-slate-500 mt-1">Daftar lengkap seluruh log pencatatan penggunaan laboratorium.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-extrabold text-slate-800 font-display">Data Penggunaan Laboratorium</h1>
+                <p className="text-xs text-slate-500 mt-1">Daftar lengkap seluruh log pencatatan penggunaan laboratorium.</p>
+              </div>
+            </div>
+
+            {/* Statistik Ringkas */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Stat 1: Total */}
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-50 text-blue-600">
+                  <FileText size={18} />
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Total Data</p>
+                  <h3 className="text-lg font-bold text-slate-800 font-display mt-0.5">{mySchedules.length}</h3>
+                </div>
+              </div>
+
+              {/* Stat 2: Pending */}
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
+                  <AlertCircle size={18} />
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Pending</p>
+                  <h3 className="text-lg font-bold text-slate-800 font-display mt-0.5">
+                    {mySchedules.filter(s => s.status === "pending" || !s.status).length}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Stat 3: Diterima */}
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50 text-emerald-600">
+                  <CheckCircle size={18} />
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Diterima</p>
+                  <h3 className="text-lg font-bold text-slate-800 font-display mt-0.5">{mySchedules.filter(s => s.status === "diterima").length}</h3>
+                </div>
+              </div>
+
+              {/* Stat 4: Ditolak */}
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-red-50 text-red-600">
+                  <XCircle size={18} />
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Ditolak</p>
+                  <h3 className="text-lg font-bold text-slate-800 font-display mt-0.5">{mySchedules.filter(s => s.status === "ditolak").length}</h3>
+                </div>
+              </div>
             </div>
 
             {/* Filter and Search Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                <input
-                  type="text"
-                  placeholder="Cari Dosen, Matkul, Mhs, NIM..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
-                />
-              </div>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 flex-1 w-full">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                  <input
+                    type="text"
+                    placeholder="Cari Dosen, Matkul, Mhs, NIM..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
+                  />
+                </div>
 
-              <div className="flex items-center gap-2">
-                <Filter size={12} className="text-slate-400 shrink-0" />
+                <div className="flex items-center gap-2">
+                  <Filter size={12} className="text-slate-400 shrink-0" />
+                  <select
+                    value={filterHari}
+                    onChange={(e) => {
+                      setFilterHari(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white cursor-pointer"
+                  >
+                    <option value="">Semua Hari</option>
+                    {listHari.map((day) => (
+                      <option key={day} value={day}>{day}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <select
-                  value={filterHari}
+                  value={filterProdi}
                   onChange={(e) => {
-                    setFilterHari(e.target.value);
+                    setFilterProdi(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white cursor-pointer"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white cursor-pointer"
                 >
-                  <option value="">Semua Hari</option>
-                  {listHari.map((day) => (
-                    <option key={day} value={day}>{day}</option>
+                  <option value="">Semua Prodi</option>
+                  {listProdi.map((p) => (
+                    <option key={p} value={p}>{p}</option>
                   ))}
+                </select>
+
+                <select
+                  value={filterStatus}
+                  onChange={(e) => {
+                    setFilterStatus(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white cursor-pointer"
+                >
+                  <option value="">Semua Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="diterima">Diterima</option>
+                  <option value="ditolak">Ditolak</option>
                 </select>
               </div>
 
-              <select
-                value={filterProdi}
-                onChange={(e) => {
-                  setFilterProdi(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white cursor-pointer"
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition duration-200 cursor-pointer shadow-xs shrink-0 w-full lg:w-auto"
               >
-                <option value="">Semua Prodi</option>
-                {listProdi.map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
+                <Plus size={14} />
+                Tambah Data Manual
+              </button>
             </div>
 
             {/* Table */}
@@ -1085,6 +1287,22 @@ export default function AdminPanel() {
                 <table className="w-full min-w-[750px] text-left border-collapse text-xs text-slate-600">
                   <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
                     <tr>
+                      <th className="px-4 py-4 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          checked={currentItems.length > 0 && currentItems.every(item => selectedLogIds.includes(item.id))}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const pageIds = currentItems.map(item => item.id);
+                              setSelectedLogIds(prev => [...new Set([...prev, ...pageIds])]);
+                            } else {
+                              const pageIds = currentItems.map(item => item.id);
+                              setSelectedLogIds(prev => prev.filter(id => !pageIds.includes(id)));
+                            }
+                          }}
+                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                      </th>
                       <th className="px-6 py-4">Waktu & Ruang</th>
                       <th className="px-6 py-4">Dosen & Perkuliahan</th>
                       <th className="px-6 py-4">Mahasiswa (P.J.) & NIM</th>
@@ -1097,6 +1315,20 @@ export default function AdminPanel() {
                     {currentItems.length > 0 ? (
                       currentItems.map((log) => (
                         <tr key={log.id} className="hover:bg-slate-50/50 transition">
+                          <td className="px-4 py-4 text-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedLogIds.includes(log.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedLogIds(prev => [...prev, log.id]);
+                                } else {
+                                  setSelectedLogIds(prev => prev.filter(id => id !== log.id));
+                                }
+                              }}
+                              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            />
+                          </td>
                           <td className="px-6 py-4">
                             <div className="font-bold text-slate-800">{log.hari}</div>
                             <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
@@ -1124,7 +1356,20 @@ export default function AdminPanel() {
                             <div className="text-[10px] text-slate-400 font-mono mt-0.5">{log.nim || "-"}</div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="font-medium text-slate-700">{log.numberwa || "-"}</div>
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium text-slate-700">{log.numberwa || "-"}</span>
+                              {log.numberwa && (
+                                <a
+                                  href={`https://wa.me/${formatWhatsAppNumber(log.numberwa)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-emerald-500 hover:text-emerald-600 p-0.5 hover:bg-emerald-50 rounded transition"
+                                  title="Hubungi via WhatsApp"
+                                >
+                                  <MessageCircle size={14} />
+                                </a>
+                              )}
+                            </div>
                             <div className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
                               <span className="px-1.5 py-0.5 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded text-[9px] font-bold">
                                 {log.jumlahHadir || 0} Orang
@@ -1194,8 +1439,8 @@ export default function AdminPanel() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-semibold">
-                          Tidak ada data penggunaan ditemukan. (Empty State)
+                        <td colSpan={7} className="px-6 py-12 text-center text-slate-400 font-semibold">
+                          Tidak ada data penggunaan ditemukan.
                         </td>
                       </tr>
                     )}
@@ -1243,6 +1488,47 @@ export default function AdminPanel() {
                 </div>
               )}
             </div>
+
+            {/* Bulk Action Sticky Bar */}
+            {selectedLogIds.length > 0 && (
+              <div className="fixed bottom-6 left-6 right-6 lg:left-72 bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl shadow-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 z-45 animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold font-mono">
+                    {selectedLogIds.length}
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 font-display">Data Penggunaan Terpilih</span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
+                  <button
+                    onClick={handleBulkApprove}
+                    className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition duration-200 cursor-pointer shadow-xs"
+                  >
+                    <CheckCircle size={14} />
+                    Terima Terpilih
+                  </button>
+                  <button
+                    onClick={handleBulkReject}
+                    className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition duration-200 cursor-pointer shadow-xs"
+                  >
+                    <XCircle size={14} />
+                    Tolak Terpilih
+                  </button>
+                  <button
+                    onClick={handleBulkDelete}
+                    className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition duration-200 cursor-pointer shadow-xs"
+                  >
+                    <Trash2 size={14} />
+                    Hapus Terpilih
+                  </button>
+                  <button
+                    onClick={() => setSelectedLogIds([])}
+                    className="px-3.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-bold transition duration-200 cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1771,7 +2057,19 @@ export default function AdminPanel() {
               <div className="grid grid-cols-2 gap-4 pb-4 border-b border-slate-100">
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">No WhatsApp</span>
-                  <span className="font-semibold text-slate-800 text-sm mt-0.5 block">{selectedLog.numberwa || "-"}</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="font-semibold text-slate-800 text-sm block">{selectedLog.numberwa || "-"}</span>
+                    {selectedLog.numberwa && (
+                      <a
+                        href={`https://wa.me/${formatWhatsAppNumber(selectedLog.numberwa)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold transition cursor-pointer"
+                      >
+                        <MessageCircle size={10} /> Chat
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Jumlah Hadir</span>
@@ -1961,6 +2259,214 @@ export default function AdminPanel() {
                   style={{ backgroundColor: "#4bc9bf" }}
                 >
                   Simpan Perubahan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL: TAMBAH DATA MANUAL ==================== */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden my-8 animate-fade-in">
+            {/* Header */}
+            <div className="p-6 text-white flex items-center justify-between" style={{ backgroundColor: "#4b8fca" }}>
+              <div className="flex items-center gap-3">
+                <Plus size={20} />
+                <h3 className="font-bold text-base font-display">Tambah Data Penggunaan Manual</h3>
+              </div>
+              <button 
+                onClick={() => setIsAddModalOpen(false)}
+                className="text-white/80 hover:text-white p-1 hover:bg-white/10 rounded-lg transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveAddManual}>
+              <div className="p-6 space-y-4 text-xs max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Hari</label>
+                    <select
+                      value={addFormData.hari}
+                      onChange={(e) => setAddFormData({ ...addFormData, hari: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
+                    >
+                      {listHari.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Jam (e.g. 08:00 - 09:40)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 08:00 - 09:40"
+                      value={addFormData.jam}
+                      onChange={(e) => setAddFormData({ ...addFormData, jam: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Laboratorium</label>
+                    <select
+                      value={addFormData.ruang}
+                      onChange={(e) => setAddFormData({ ...addFormData, ruang: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
+                    >
+                      {laboratories && laboratories.length > 0 ? (
+                        laboratories.map(lab => (
+                          <option key={lab.id} value={lab.name}>{lab.name}</option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="Lab Programming">Lab Programming</option>
+                          <option value="Lab Data Sains">Lab Data Sains</option>
+                          <option value="Lab Multimedia">Lab Multimedia</option>
+                          <option value="Lab Sistem Informasi">Lab Sistem Informasi</option>
+                          <option value="Lab Matematika">Lab Matematika</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Status Awal</label>
+                    <select
+                      value={addFormData.status}
+                      onChange={(e) => setAddFormData({ ...addFormData, status: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
+                    >
+                      <option value="diterima">Diterima (Langsung Setujui)</option>
+                      <option value="pending">Pending (Perlu Konfirmasi)</option>
+                      <option value="ditolak">Ditolak</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nama Dosen</label>
+                  <input
+                    type="text"
+                    value={addFormData.dosen}
+                    onChange={(e) => setAddFormData({ ...addFormData, dosen: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Prodi</label>
+                    <select
+                      value={addFormData.prodi}
+                      onChange={(e) => setAddFormData({ ...addFormData, prodi: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
+                    >
+                      {listProdi.map(p => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Kelas</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. TI-4A"
+                      value={addFormData.kelas}
+                      onChange={(e) => setAddFormData({ ...addFormData, kelas: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Mata Kuliah</label>
+                  <input
+                    type="text"
+                    value={addFormData.matkul}
+                    onChange={(e) => setAddFormData({ ...addFormData, matkul: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nama Mahasiswa (PJ)</label>
+                    <input
+                      type="text"
+                      value={addFormData.mahasiswa}
+                      onChange={(e) => setAddFormData({ ...addFormData, mahasiswa: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">NIM</label>
+                    <input
+                      type="text"
+                      value={addFormData.nim}
+                      onChange={(e) => setAddFormData({ ...addFormData, nim: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">No WhatsApp</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 0812345678"
+                      value={addFormData.numberwa}
+                      onChange={(e) => setAddFormData({ ...addFormData, numberwa: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Jumlah Hadir</label>
+                    <input
+                      type="number"
+                      value={addFormData.jumlahHadir}
+                      onChange={(e) => setAddFormData({ ...addFormData, jumlahHadir: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tanggal Penggunaan</label>
+                  <input
+                    type="date"
+                    value={addFormData.tanggalInput}
+                    onChange={(e) => setAddFormData({ ...addFormData, tanggalInput: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold transition text-xs cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-white rounded-xl font-bold transition text-xs shadow-md cursor-pointer bg-blue-600 hover:bg-blue-700"
+                >
+                  Simpan Data
                 </button>
               </div>
             </form>
