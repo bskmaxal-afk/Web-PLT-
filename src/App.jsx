@@ -1,4 +1,4 @@
-import { HashRouter as Router, Routes, Route } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AppProvider } from "./context/AppContext";
 import DashboardLayout from "./layouts/DashboardLayout";
 import HeroBanner from "./components/dashboard/HeroBanner";
@@ -6,7 +6,6 @@ import LaboratoryGrid from "./components/dashboard/LaboratoryGrid";
 
 // Feature Pages
 import LaboratoryBookingForm from "./pages/LaboratoryBookingForm";
-
 import LaboratoryInformation from "./pages/LaboratoryInformation";
 import UsageGuide from "./pages/UsageGuide";
 import HelpAndSupport from "./pages/HelpAndSupport";
@@ -16,26 +15,61 @@ function App() {
   return (
     <AppProvider>
       <Router>
-        <DashboardLayout>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <>
-                  <HeroBanner />
-                  <LaboratoryGrid />
-                </>
-              }
-              
-            />
-            <Route path="/booking" element={<LaboratoryBookingForm />} />
+        <Routes>
+          {/* Redirect root to dashboard */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-            <Route path="/laboratories" element={<LaboratoryInformation />} />
-            <Route path="/guide" element={<UsageGuide />} />
-            <Route path="/contact" element={<HelpAndSupport />} />
-            <Route path="/admin" element={<AdminPanel />} />
-          </Routes>
-        </DashboardLayout>
+          {/* Dashboard Pages (Wrapped in DashboardLayout) */}
+          <Route
+            path="/dashboard"
+            element={
+              <DashboardLayout>
+                <HeroBanner />
+                <LaboratoryGrid />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/booking"
+            element={
+              <DashboardLayout>
+                <LaboratoryBookingForm />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/laboratories"
+            element={
+              <DashboardLayout>
+                <LaboratoryInformation />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/guide"
+            element={
+              <DashboardLayout>
+                <UsageGuide />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <DashboardLayout>
+                <HelpAndSupport />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <DashboardLayout>
+                <AdminPanel />
+              </DashboardLayout>
+            }
+          />
+        </Routes>
       </Router>
     </AppProvider>
   );

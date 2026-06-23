@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { Menu, Calendar, ShieldCheck, Lock, LogOut } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
 import { Link } from "react-router-dom";
+import NotificationBell from "./NotificationBell";
 
 /**
  * Navbar — Top navigation bar with date/time display and Admin access.
@@ -74,6 +75,12 @@ export default function Navbar() {
           <Calendar size={15} className="text-slate-500" />
           <span>{formatIndonesianDate(time)}</span>
         </div>
+
+        {/* Separator */}
+        <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
+
+        {/* Notification Bell */}
+        <NotificationBell />
 
         {/* Separator */}
         <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
