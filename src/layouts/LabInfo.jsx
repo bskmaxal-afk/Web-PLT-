@@ -3,7 +3,7 @@
 export default function LabInfo() {
   const labs = [
     { nama: 'Lab Komputer 1', prodi: 'Matematika', spek: 'Core i5, 16GB RAM', kapasitas: '30 PC User', software: 'MATLAB, SPSS, Maple' },
-    { nama: 'Lab Komputer 2', prodi: 'Teknik Informatika', spek: 'Core i7, 32GB RAM, RTX 3060', kapasitas: '40 PC User', software: 'VS Code, Android Studio, Docker' },
+    { nama: 'Lab Komputer 2', prodi: 'Teknik Informatika', spek: 'Core i7, 32GB RAM, RTX 3060', kapasitas: '36 PC User', software: 'VS Code, Android Studio, Docker' },
     { nama: 'Lab Sistem Informasi', prodi: 'Sistem Informasi', spek: 'Core i5, 16GB RAM', kapasitas: '35 PC User', software: 'StarUML, MySQL Workbench, Tableau' },
   ];
 

@@ -16,13 +16,8 @@ export default function UsageGuide() {
     },
     {
       step: "03",
-      title: "Tunggu Validasi Admin",
-      desc: 'Admin laboratorium akan memeriksa kesesuaian agenda dan jadwal ruang. Status pengajuan Anda dapat dipantau real-time di halaman "Jadwal Saya".',
-    },
-    {
-      step: "04",
       title: "Check-in & Gunakan Lab",
-      desc: "Jika disetujui, datang tepat waktu ke laboratorium sesuai sesi. Hubungi laboran/admin di lokasi untuk membuka ruangan dan memulai kegiatan.",
+      desc: "Datang tepat waktu ke laboratorium sesuai sesi yang dipesan. Hubungi laboran/admin di lokasi untuk membuka ruangan dan memulai kegiatan.",
     },
   ];
 
