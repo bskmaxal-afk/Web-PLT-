@@ -1,4 +1,54 @@
 
-import { labs } from "../data/labs";
+import API from "./api";
+import { labs as fallbackLabs } from "../data/labs";
 
-export const getLabs = async () => Promise.resolve(labs);
+/**
+ * Fetch daftar laboratorium dari backend.
+ * GET /get/lab
+ *
+ * Response format:
+ * {
+ *   "message": [
+ *     { "id_lab": 1, "nama_lab": "Lab Komputer 1" },
+ *     { "id_lab": 2, "nama_lab": "Lab Komputer 2" },
+ *     ...
+ *   ],
+ *   "status": 200,
+ *   "token": "none"
+ * }
+ *
+ * Jika fetch gagal, fallback ke data statis di labs.js.
+ */
+export const getLabs = async () => {
+  try {
+    const response = await API.get("/get/lab");
+    const data = response.data;
+
+    if (data && data.message && Array.isArray(data.message)) {
+      return data.message.map((item) => {
+        // Cari data fallback untuk field tambahan (description, spek, software, dll.)
+        const fallback = fallbackLabs.find(
+          (fb) => fb.name.toLowerCase() === item.nama_lab.toLowerCase()
+        );
+
+        return {
+          id: item.id_lab,
+          name: item.nama_lab,
+          description: fallback?.description || `Laboratorium ${item.nama_lab}`,
+          capacity: item.kapasitas || fallback?.capacity || 30,
+          status: fallback?.status || "available",
+          prodi: fallback?.prodi || "Umum",
+          spek: fallback?.spek || "-",
+          software: fallback?.software || "-",
+        };
+      });
+    }
+
+    // Format response tidak sesuai, fallback ke data statis
+    console.warn("Format response /get/lab tidak sesuai, menggunakan data statis.");
+    return fallbackLabs;
+  } catch (error) {
+    console.error("Gagal fetch lab dari backend, menggunakan data statis:", error);
+    return fallbackLabs;
+  }
+};

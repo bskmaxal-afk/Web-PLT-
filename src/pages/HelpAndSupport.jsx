@@ -1,4 +1,5 @@
 import { useState } from "react";
+import API from "../services/api";
 
 /**
  * HelpAndSupport — Contact information and support message form.
@@ -9,16 +10,32 @@ export default function HelpAndSupport() {
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("idle"); // 'idle', 'sending', 'success'
 
-  const handleSubmitMessage = (e) => {
+  const handleSubmitMessage = async (e) => {
     e.preventDefault();
+    if (!name.trim() || !message.trim()) {
+      alert("Nama/NIM dan pesan wajib diisi!");
+      return;
+    }
+
     setStatus("sending");
 
-    // Simulate API call — replace with Axios POST when backend is ready
-    // API.post('/support/messages', { name, message })
-    setTimeout(() => {
-      setStatus("success");
-      console.log("Pengiriman pesan support sukses:", { name, message });
-    }, 1200);
+    try {
+      const response = await API.post("/post/pengaduan", {
+        nimataunama: name.trim(),
+        pesannya: message.trim(),
+      });
+
+      if (response.status === 200 || response.data?.status === 200) {
+        setStatus("success");
+      } else {
+        setStatus("idle");
+        alert("Gagal mengirim pengaduan. Silakan coba lagi.");
+      }
+    } catch (error) {
+      setStatus("idle");
+      const errMsg = error.response?.data?.message || "Gagal mengirim pengaduan. Periksa koneksi Anda.";
+      alert(errMsg);
+    }
   };
 
   const handleResetForm = () => {

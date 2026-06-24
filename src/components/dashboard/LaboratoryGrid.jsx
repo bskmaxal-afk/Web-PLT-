@@ -52,6 +52,16 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-blue-500 hover:text-white",
     },
     {
+      id: 16,
+      name: "Lab Aplikasi 3",
+      description: "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.",
+      icon: "Computer",
+      colorClass: "bg-emerald-500",
+      textClass: "text-blue-600",
+      borderClass: "border-blue-500/20 hover:border-blue-500",
+      hoverBtnClass: "hover:bg-blue-500 hover:text-white",
+    },
+    {
       id: 3,
       name: "Lab Data Sains",
       description:

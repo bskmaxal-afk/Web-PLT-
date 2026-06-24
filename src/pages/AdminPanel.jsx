@@ -44,6 +44,23 @@ export default function AdminPanel() {
   const [inputJamMulai, setInputJamMulai] = useState("");
   const [inputJamSelesai, setInputJamSelesai] = useState("");
   const [inputKelas, setInputKelas] = useState("");
+  const [inputKeterangan, setInputKeterangan] = useState("");
+
+  // Helper to check if lab is locked (Podcast, ELC 1 & 2, Riset)
+  const isLockedLab = (labName) => {
+    if (!labName) return false;
+    const nameLower = labName.toLowerCase();
+    return nameLower.includes("podcast") || nameLower.includes("elc 1") || nameLower.includes("elc 2") || nameLower.includes("riset");
+  };
+
+  // Helper to get today's date in local time YYYY-MM-DD
+  const getTodayDateString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   // Mobile sidebar visibility
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -168,8 +185,23 @@ export default function AdminPanel() {
   // Handle Add Schedule (Jadwal Kuliah) via backend API
   const handleAddSchedule = async (e) => {
     e.preventDefault();
-    if (!inputLab || !inputProdi || !inputKelas || !inputMatkul || !inputDosen || !inputTanggal || !inputJamMulai || !inputJamSelesai) {
+
+    let finalProdi = inputProdi;
+    let finalMatkul = inputMatkul;
+
+    if (isLockedLab(inputLab)) {
+      finalProdi = "Umum";
+      finalMatkul = inputKeterangan.trim();
+    }
+
+    if (!inputLab || !finalProdi || !inputKelas || !finalMatkul || !inputDosen || !inputTanggal || !inputJamMulai || !inputJamSelesai) {
       alert("Semua field wajib diisi!");
+      return;
+    }
+
+    const todayStr = getTodayDateString();
+    if (inputTanggal < todayStr) {
+      alert("Tanggal pelaksanaan tidak boleh sebelum hari ini!");
       return;
     }
 
@@ -180,8 +212,8 @@ export default function AdminPanel() {
     try {
       const result = await createSchedule({
         labId,
-        prodi: inputProdi,
-        matkul: inputMatkul,
+        prodi: finalProdi,
+        matkul: finalMatkul,
         dosen: inputDosen,
         tanggal: inputTanggal,
         jamMulai: inputJamMulai,
@@ -199,6 +231,7 @@ export default function AdminPanel() {
         setInputTanggal("");
         setInputJamMulai("");
         setInputJamSelesai("");
+        setInputKeterangan("");
         // Refresh data dari backend
         await refreshData();
         setActiveTab("data-penggunaan");
@@ -1373,7 +1406,7 @@ export default function AdminPanel() {
                               <Clock size={10} className="text-slate-400" />
                               {log.jam}
                             </div>
-                            <div className="text-[10px] text-blue-600 font-bold mt-1 bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 inline-block">
+                            <div className="text-[12px] text-blue-600 font-bold mt-1 bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 inline-block">
                               {log.ruang}
                             </div>
                           </td>
@@ -1381,17 +1414,17 @@ export default function AdminPanel() {
                             <div className="font-semibold text-slate-800 text-sm">{log.dosen}</div>
                             <div className="text-[11px] text-slate-600 mt-0.5 font-medium">{log.matkul}</div>
                             <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                              <span className="px-1.5 py-0.5 bg-slate-50 border border-slate-100 text-slate-500 rounded text-[9px] font-bold">
+                              <span className="px-1.5 py-0.5 bg-slate-50 border border-slate-100 text-slate-500 rounded text-[12px] font-bold">
                                 {log.prodi}
                               </span>
-                              <span className="px-1.5 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded text-[9px] font-mono font-bold">
+                              <span className="px-1.5 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded text-[12px] font-mono font-bold">
                                 {log.kelas}
                               </span>
                             </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="font-bold text-slate-800">{log.mahasiswa || "-"}</div>
-                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">{log.nim || "-"}</div>
+                            <div className="text-[18px] text-slate-400 font-mono mt-0.5">{log.nim || "-"}</div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-1">
@@ -1403,13 +1436,14 @@ export default function AdminPanel() {
                                   rel="noopener noreferrer"
                                   className="text-emerald-500 hover:text-emerald-600 p-0.5 hover:bg-emerald-50 rounded transition"
                                   title="Hubungi via WhatsApp"
+                              
                                 >
                                   <MessageCircle size={14} />
                                 </a>
                               )}
                             </div>
                             <div className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
-                              <span className="px-1.5 py-0.5 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded text-[9px] font-bold">
+                              <span className="px-1.5 py-0.5 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded text-[10px] font-bold">
                                 {log.jumlahHadir || 0} Orang
                               </span>
                             </div>
@@ -1894,7 +1928,20 @@ export default function AdminPanel() {
                       <select
                         required
                         value={inputLab}
-                        onChange={(e) => setInputLab(e.target.value)}
+                        onChange={(e) => {
+                          const newLab = e.target.value;
+                          setInputLab(newLab);
+                          if (isLockedLab(newLab)) {
+                            setInputProdi("Umum");
+                            setInputMatkul("");
+                            setInputKeterangan("");
+                          } else {
+                            if (isLockedLab(inputLab)) {
+                              setInputProdi("");
+                              setInputMatkul("");
+                            }
+                          }
+                        }}
                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
                       >
                         <option value="">-- Pilih Laboratorium --</option>
@@ -1915,10 +1962,13 @@ export default function AdminPanel() {
                         <input
                           type="text"
                           required
-                          placeholder="Contoh: Teknik Informatika"
+                          disabled={isLockedLab(inputLab)}
+                          placeholder={isLockedLab(inputLab) ? "Umum (Terkunci)" : "Contoh: Teknik Informatika"}
                           value={inputProdi}
                           onChange={(e) => setInputProdi(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
+                          className={`w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition ${
+                            isLockedLab(inputLab) ? "bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200" : "bg-slate-50/50"
+                          }`}
                         />
                       </div>
                       <div>
@@ -1945,10 +1995,13 @@ export default function AdminPanel() {
                         <input
                           type="text"
                           required
-                          placeholder="Contoh: Pemrograman Berorientasi Objek"
-                          value={inputMatkul}
+                          disabled={isLockedLab(inputLab)}
+                          placeholder={isLockedLab(inputLab) ? "Diisi lewat kolom Keterangan" : "Contoh: Pemrograman Berorientasi Objek"}
+                          value={isLockedLab(inputLab) ? inputKeterangan : inputMatkul}
                           onChange={(e) => setInputMatkul(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
+                          className={`w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition ${
+                            isLockedLab(inputLab) ? "bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200" : "bg-slate-50/50"
+                          }`}
                         />
                       </div>
                       <div>
@@ -1966,6 +2019,26 @@ export default function AdminPanel() {
                       </div>
                     </div>
 
+                    {/* Keterangan (Only shown if Podcast, ELC 1/2, or Riset is selected) */}
+                    {isLockedLab(inputLab) && (
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                          Keterangan Kegiatan
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Contoh: keterangan podcast membahas masyarakat"
+                          value={inputKeterangan}
+                          onChange={(e) => {
+                            setInputKeterangan(e.target.value);
+                            setInputMatkul(e.target.value);
+                          }}
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
+                        />
+                      </div>
+                    )}
+
                     {/* Tanggal Pelaksanaan */}
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
@@ -1974,6 +2047,7 @@ export default function AdminPanel() {
                       <input
                         type="date"
                         required
+                        min={getTodayDateString()}
                         value={inputTanggal}
                         onChange={(e) => setInputTanggal(e.target.value)}
                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
@@ -2021,6 +2095,7 @@ export default function AdminPanel() {
                           setInputTanggal("");
                           setInputJamMulai("");
                           setInputJamSelesai("");
+                          setInputKeterangan("");
                           setActiveTab("data-penggunaan");
                         }}
                         className="px-5 py-3 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl font-bold transition text-xs cursor-pointer"

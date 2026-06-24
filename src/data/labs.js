@@ -2,6 +2,7 @@
 export const labs = [
   { id: 1, name: "Lab Aplikasi 1", description: "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.", capacity: 35, status: "available", prodi: "Teknik Informatika", spek: "Core i7, 32GB RAM, RTX 3060", software: "VS Code, Android Studio, Docker" },
   { id: 2, name: "Lab Aplikasi 2", description: "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.", capacity: 35, status: "available", prodi: "Teknik Informatika", spek: "Core i7, 32GB RAM, RTX 3060", software: "VS Code, IntelliJ, Postman" },
+    { id: 16, name: "Lab Aplikasi 3", description: "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.", capacity: 35, status: "available", prodi: "Teknik Informatika", spek: "Core i7, 32GB RAM, RTX 3060", software: "VS Code, IntelliJ, Postman" },
   { id: 3, name: "Lab Data Sains", description: "Laboratorium untuk praktikum analisis data, machine learning, dan penelitian data sains.", capacity: 30, status: "available", prodi: "Matematika", spek: "Core i7, 32GB RAM, GPU Tesla", software: "Python, Jupyter, TensorFlow, R Studio" },
   { id: 4, name: "Lab Jaringan Komputer", description: "Laboratorium untuk praktikum jaringan komputer, konfigurasi perangkat, dan administrasi jaringan.", capacity: 30, status: "available", prodi: "Teknik Informatika", spek: "Core i5, 16GB RAM", software: "Cisco Packet Tracer, Wireshark, GNS3" },
   { id: 5, name: "Lab Matematika", description: "Laboratorium untuk praktikum dan penelitian matematika.", capacity: 40, status: "available", prodi: "Matematika", spek: "Core i5, 16GB RAM", software: "MATLAB, SPSS, Maple, GeoGebra" },
@@ -15,4 +16,5 @@ export const labs = [
   { id: 13, name: "Ruang Podcast", description: "Ruang untuk kegiatan rekaman audio, podcast, dan produksi konten digital.", capacity: 10, status: "available", prodi: "Umum", spek: "iMac, Audio Interface, Mic Condenser", software: "Audacity, GarageBand, OBS Studio" },
   { id: 14, name: "Ruang Riset", description: "Ruang untuk kegiatan penelitian, diskusi akademik, dan pengembangan inovasi.", capacity: 20, status: "available", prodi: "Umum", spek: "Core i7, 32GB RAM", software: "LaTeX, Mendeley, SPSS, NVivo" },
   { id: 15, name: "Ruang Operasi", description: "Ruang untuk kegiatan operasional, monitoring sistem, dan koordinasi laboratorium.", capacity: 15, status: "available", prodi: "Umum", spek: "Server Rack, Monitor Array", software: "Zabbix, Grafana, SSH Tools" },
+
 ];

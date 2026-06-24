@@ -34,6 +34,11 @@ export const laboratoryCourses = {
     "Proyek Minor Sistem Informasi",
     "Pendidikan Pancasila",
   ],
+    16: [
+    "Rekayasa Perangkat Lunak",
+    "Algoritma dan Struktur Data",
+    "Pemrograman Berorientasi Objek"
+  ],
 
   // ── Lab Aplikasi 3 / Lab Data Sains (id: 3) ────────────────
   3: [

@@ -3,6 +3,8 @@ import { createContext, useState, useCallback, useEffect } from "react";
 import { labs } from "../data/labs";
 import { getAllSchedules } from "../services/scheduleService";
 import { getAllLogbooks } from "../services/bookingService";
+import { isAuthenticated } from "../services/authService";
+import { getLabs } from "../services/laboratoryService";
 
 export const AppContext = createContext();
 
@@ -230,7 +232,8 @@ export const AppProvider = ({ children }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   // Admin authentication state for Riwayat Penggunaan access
-  const [isAdminAuthenticated, setAdminAuthenticated] = useState(false);
+  // Read from localStorage so login persists across browser refreshes
+  const [isAdminAuthenticated, setAdminAuthenticated] = useState(() => isAuthenticated());
 
   // Selected laboratory from card click (TUGAS 2)
   const [selectedLaboratory, setSelectedLaboratory] = useState(null);
@@ -300,6 +303,21 @@ export const AppProvider = ({ children }) => {
     } finally {
       setIsDataLoading(false);
     }
+  }, []);
+
+  // Fetch daftar laboratorium dari backend on mount
+  useEffect(() => {
+    const fetchLaboratories = async () => {
+      try {
+        const fetchedLabs = await getLabs();
+        if (fetchedLabs && fetchedLabs.length > 0) {
+          setLaboratories(fetchedLabs);
+        }
+      } catch (error) {
+        console.error("Gagal fetch daftar lab:", error);
+      }
+    };
+    fetchLaboratories();
   }, []);
 
   // Fetch initial data on mount (sehingga data langsung terisi di sisi mahasiswa dan admin)

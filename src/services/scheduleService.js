@@ -38,14 +38,14 @@ export const createSchedule = async (data) => {
 };
 
 /**
- * Ambil semua jadwal kuliah (Protected - butuh JWT).
- * GET /get/jadwal
+ * Ambil semua jadwal kuliah (Public - tanpa JWT).
+ * GET /get/penggunaanlab
  *
  * @returns {Promise<{ success: boolean, data?: Array, message?: string }>}
  */
 export const getAllSchedules = async () => {
   try {
-    const response = await API.get("/get/jadwal");
+    const response = await API.get("/get/penggunaanlab");
     const data = Array.isArray(response.data)
       ? response.data
       : response.data?.message || response.data?.data || response.data?.results || [];
