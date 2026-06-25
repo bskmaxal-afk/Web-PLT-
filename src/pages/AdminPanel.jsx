@@ -108,9 +108,11 @@ export default function AdminPanel() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // Laporan Date Range States
+  // Laporan Date Range & Type/Status States
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [reportType, setReportType] = useState("semua"); // "semua", "harian", "semester"
+  const [reportStatus, setReportStatus] = useState("semua"); // "semua", "dipesan", "kosong"
 
   // Detail Modal State
   const [selectedLog, setSelectedLog] = useState(null);
@@ -352,11 +354,16 @@ export default function AdminPanel() {
   // Handle Save Edit
   const handleSaveEdit = (e) => {
     e.preventDefault();
+    const parsedHadir = parseInt(editFormData.jumlahHadir, 10) || 0;
+    if (parsedHadir > 36) {
+      alert("Jumlah hadir maksimal 36 orang.");
+      return;
+    }
     setMySchedules(
       mySchedules.map(log => log.id === editingLog.id ? { 
         ...log, 
         ...editFormData,
-        jumlahHadir: parseInt(editFormData.jumlahHadir, 10) || 0
+        jumlahHadir: parsedHadir
       } : log)
     );
     setEditingLog(null);
@@ -449,6 +456,12 @@ export default function AdminPanel() {
 
   // Data Penggunaan Filtered Output
   const filteredUsage = mySchedules.filter((log) => {
+    // Sesi logbook yang sudah selesai dipindahkan ke Laporan, 
+    // sehingga di tab Data Penggunaan aktif tidak menampilkan data mahasiswanya lagi
+    if (log._type === "logbook" && log.status === "selesai") {
+      return false;
+    }
+
     const matchesSearch = 
       log.dosen.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.matkul.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -471,16 +484,55 @@ export default function AdminPanel() {
 
   // Laporan Filtered Output
   const reportFilteredUsage = mySchedules.filter((log) => {
-    if (!startDate && !endDate) return true;
-    const logDate = new Date(log.tanggalInput);
-    
-    if (startDate && !endDate) {
-      return logDate >= new Date(startDate);
+    // 1. Filter Tanggal (hanya berlaku jika reportType === "semua")
+    let matchesDate = true;
+    if (reportType === "semua" && (startDate || endDate)) {
+      const logDate = new Date(log.tanggalInput);
+      if (startDate && !endDate) {
+        matchesDate = logDate >= new Date(startDate);
+      } else if (!startDate && endDate) {
+        matchesDate = logDate <= new Date(endDate);
+      } else if (startDate && endDate) {
+        matchesDate = logDate >= new Date(startDate) && logDate <= new Date(endDate);
+      }
     }
-    if (!startDate && endDate) {
-      return logDate <= new Date(endDate);
+
+    // 2. Filter Jenis Laporan (Periode)
+    let matchesType = true;
+    if (reportType === "harian") {
+      const logDate = new Date(log.tanggalInput).toDateString();
+      const todayDate = new Date().toDateString();
+      matchesType = logDate === todayDate;
+    } else if (reportType === "semester") {
+      const logDate = new Date(log.tanggalInput);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const sixMonthsAgo = new Date(today);
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      matchesType = logDate >= sixMonthsAgo && logDate <= new Date();
     }
-    return logDate >= new Date(startDate) && logDate <= new Date(endDate);
+
+    // 3. Filter Status Keterisian
+    let matchesStatus = true;
+    if (reportStatus === "dipesan") {
+      matchesStatus = log.status === "dipesan";
+    } else if (reportStatus === "selesai") {
+      matchesStatus = log.status === "selesai";
+    } else if (reportStatus === "kosong") {
+      matchesStatus = log.status === "kosong";
+    }
+
+    // 4. Jika status adalah "kosong" (Belum Dipesan), hanya tampilkan jika tanggalnya sudah berlalu (kemarin atau sebelumnya)
+    if (log.status === "kosong") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const logDate = new Date(log.tanggalInput);
+      if (logDate >= today) {
+        return false;
+      }
+    }
+
+    return matchesDate && matchesType && matchesStatus;
   });
 
   // Export Report to Excel (.xlsx) using SheetJS
@@ -499,10 +551,10 @@ export default function AdminPanel() {
       s.matkul, 
       s.ruang, 
       s.tanggalInput,
-      s.mahasiswa || "-",
-      s.nim || "-",
-      s.numberwa || "-",
-      s.jumlahHadir || 0
+      s.status === "kosong" ? "Belum Dipesan" : (s.mahasiswa || "-"),
+      s.status === "kosong" ? "Belum Dipesan" : (s.nim || "-"),
+      s.status === "kosong" ? "Belum Dipesan" : (s.numberwa || "-"),
+      s.status === "kosong" ? 0 : (s.jumlahHadir || 0)
     ]);
     
     const wsData = [headers, ...rows];
@@ -526,7 +578,7 @@ export default function AdminPanel() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Laporan Logbook");
     
-    const dateStr = `${startDate || "semua"}_sd_${endDate || "semua"}`;
+    const dateStr = `${reportType}_${reportStatus}_${startDate || "semua"}_sd_${endDate || "semua"}`;
     XLSX.writeFile(wb, `laporan_logbook_${dateStr}.xlsx`);
   };
 
@@ -552,7 +604,7 @@ export default function AdminPanel() {
     doc.setFont("Helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(100);
-    const dateRangeStr = `Periode: ${startDate || "Semua Tanggal"} s.d. ${endDate || "Sekarang"}`;
+    const dateRangeStr = `Periode: ${reportType === "harian" ? "Harian (Hari Ini)" : reportType === "semester" ? "Semester (6 Bulan Terakhir)" : `Kustom (${startDate || "Awal"} s.d. ${endDate || "Sekarang"})`} | Status: ${reportStatus === "dipesan" ? "Dipesan (Ada Kegiatan)" : reportStatus === "selesai" ? "Selesai (Kegiatan Berakhir)" : reportStatus === "kosong" ? "Belum Dipesan (Kosong)" : "Semua Status"}`;
     doc.text(dateRangeStr, 14, 24);
     
     const tableHeaders = [
@@ -568,10 +620,10 @@ export default function AdminPanel() {
       s.dosen,
       s.matkul,
       `${s.prodi} (${s.kelas})`,
-      s.mahasiswa || "-",
-      s.nim || "-",
-      s.numberwa || "-",
-      s.jumlahHadir || 0
+      s.status === "kosong" ? "Belum Dipesan" : (s.mahasiswa || "-"),
+      s.status === "kosong" ? "Belum Dipesan" : (s.nim || "-"),
+      s.status === "kosong" ? "Belum Dipesan" : (s.numberwa || "-"),
+      s.status === "kosong" ? "-" : (s.jumlahHadir || 0)
     ]);
     
     doc.autoTable({
@@ -612,7 +664,7 @@ export default function AdminPanel() {
       }
     });
     
-    const dateStr = `${startDate || "semua"}_sd_${endDate || "semua"}`;
+    const dateStr = `${reportType}_${reportStatus}_${startDate || "semua"}_sd_${endDate || "semua"}`;
     doc.save(`laporan_logbook_${dateStr}.pdf`);
   };
 
@@ -875,7 +927,7 @@ export default function AdminPanel() {
             prodiVal = prodiMapping[normProdi];
           }
           
-          const hadirVal = parseInt(val(indices.jumlahHadir, "0")) || 0;
+          const hadirVal = Math.min(parseInt(val(indices.jumlahHadir, "0")) || 0, 36);
           
           parsed.push({
             id: Date.now() + rowIndex + Math.floor(Math.random() * 1000),
@@ -916,12 +968,57 @@ export default function AdminPanel() {
   const confirmImport = async () => {
     if (importedSchedules.length === 0) return;
 
+    const duplicates = [];
+    const nonDuplicates = [];
+
+    for (const sched of importedSchedules) {
+      let jamMulai = "08:00";
+      let jamSelesai = "10:00";
+      if (sched.jam && sched.jam.includes("-")) {
+        const parts = sched.jam.split("-").map(s => s.trim());
+        jamMulai = parts[0] || "08:00";
+        jamSelesai = parts[1] || "10:00";
+      }
+      const normalizedJam = `${jamMulai} - ${jamSelesai}`.replace(/\s+/g, '');
+
+      const isDuplicate = mySchedules.some(item => 
+        item.ruang?.toLowerCase() === sched.ruang?.toLowerCase() &&
+        item.tanggalInput === sched.tanggalInput &&
+        item.jam?.replace(/\s+/g, '') === normalizedJam
+      );
+
+      if (isDuplicate) {
+        duplicates.push(sched);
+      } else {
+        nonDuplicates.push(sched);
+      }
+    }
+
+    let schedulesToImport = importedSchedules;
+    let skippedCount = 0;
+
+    if (duplicates.length > 0) {
+      const proceedSkip = window.confirm(
+        `Peringatan: Ditemukan ${duplicates.length} jadwal dari total ${importedSchedules.length} yang sudah terdaftar di sistem pada lab, tanggal, dan jam yang sama.\n\nApakah Anda ingin MELEWATI (skip) jadwal duplikat tersebut dan hanya mengimpor ${nonDuplicates.length} jadwal baru?\n\n- Klik [OK] untuk mengimpor jadwal baru saja.\n- Klik [Batal / Cancel] jika ingin tetap mengimpor semua jadwal termasuk duplikat.`
+      );
+      if (proceedSkip) {
+        schedulesToImport = nonDuplicates;
+        skippedCount = duplicates.length;
+        if (schedulesToImport.length === 0) {
+          alert("Semua jadwal yang Anda impor adalah duplikat dan telah dilewati. Tidak ada jadwal baru untuk disimpan.");
+          setImportedSchedules([]);
+          setImportFileName("");
+          return;
+        }
+      }
+    }
+
     let successCount = 0;
     let failCount = 0;
 
-    for (const sched of importedSchedules) {
+    for (const sched of schedulesToImport) {
       // Cari ID lab berdasarkan nama ruang
-      const matchedLab = laboratories.find(l => l.name === sched.ruang);
+      const matchedLab = laboratories.find(l => l.name.toLowerCase() === sched.ruang.toLowerCase());
       const labId = matchedLab ? matchedLab.id : 1;
 
       // Parse jam mulai & selesai dari format "HH:MM - HH:MM"
@@ -954,7 +1051,11 @@ export default function AdminPanel() {
       await refreshData();
     }
 
-    alert(`${successCount} Jadwal berhasil diimpor.${failCount > 0 ? ` ${failCount} gagal.` : ""}`);
+    let message = `${successCount} Jadwal berhasil diimpor.`;
+    if (skippedCount > 0) message += ` ${skippedCount} jadwal duplikat dilewati.`;
+    if (failCount > 0) message += ` ${failCount} gagal.`;
+    alert(message);
+
     setImportedSchedules([]);
     setImportFileName("");
     setActiveTab("data-penggunaan");
@@ -1240,50 +1341,41 @@ export default function AdminPanel() {
             </div>
 
             {/* Statistik Ringkas */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Stat 1: Total */}
               <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-50 text-blue-600">
                   <FileText size={18} />
                 </div>
                 <div>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Total Data</p>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Total Jadwal</p>
                   <h3 className="text-lg font-bold text-slate-800 font-display mt-0.5">{mySchedules.length}</h3>
                 </div>
               </div>
 
-              {/* Stat 2: Pending */}
+              {/* Stat 2: Dipesan */}
               <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-50 text-amber-600">
                   <AlertCircle size={18} />
                 </div>
                 <div>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Pending</p>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Dipesan (Ada Kegiatan)</p>
                   <h3 className="text-lg font-bold text-slate-800 font-display mt-0.5">
-                    {mySchedules.filter(s => s.status === "pending" || !s.status).length}
+                    {mySchedules.filter(s => s.status === "dipesan").length}
                   </h3>
                 </div>
               </div>
 
-              {/* Stat 3: Diterima */}
+              {/* Stat 3: Kosong */}
               <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50 text-emerald-600">
                   <CheckCircle size={18} />
                 </div>
                 <div>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Diterima</p>
-                  <h3 className="text-lg font-bold text-slate-800 font-display mt-0.5">{mySchedules.filter(s => s.status === "diterima").length}</h3>
-                </div>
-              </div>
-
-              {/* Stat 4: Ditolak */}
-              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-red-50 text-red-600">
-                  <XCircle size={18} />
-                </div>
-                <div>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Ditolak</p>
-                  <h3 className="text-lg font-bold text-slate-800 font-display mt-0.5">{mySchedules.filter(s => s.status === "ditolak").length}</h3>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Kosong (Tersedia)</p>
+                  <h3 className="text-lg font-bold text-slate-800 font-display mt-0.5">
+                    {mySchedules.filter(s => s.status === "kosong").length}
+                  </h3>
                 </div>
               </div>
             </div>
@@ -1345,9 +1437,9 @@ export default function AdminPanel() {
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white cursor-pointer"
                 >
                   <option value="">Semua Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="diterima">Diterima</option>
-                  <option value="ditolak">Ditolak</option>
+                  <option value="dipesan">Dipesan</option>
+                  <option value="selesai">Selesai</option>
+                  <option value="kosong">Kosong</option>
                 </select>
               </div>
             </div>
@@ -1449,17 +1541,17 @@ export default function AdminPanel() {
                             </div>
                           </td>
                           <td className="px-6 py-4 text-center">
-                            {log.status === "diterima" ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-[10px] font-bold">
-                                <CheckCircle size={11} /> Diterima
+                            {log.status === "selesai" ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 rounded-full text-[10px] font-bold">
+                                <CheckCircle size={11} /> Selesai (Kegiatan Berakhir)
                               </span>
-                            ) : log.status === "ditolak" ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 border border-red-200 text-red-600 rounded-full text-[10px] font-bold">
-                                <XCircle size={11} /> Ditolak
+                            ) : log.status === "dipesan" ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-[10px] font-bold">
+                                <AlertCircle size={11} /> Dipesan (Ada Kegiatan)
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-[10px] font-bold">
-                                <AlertCircle size={11} /> Pending
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-[10px] font-bold">
+                                <CheckCircle size={11} /> Kosong (Tersedia)
                               </span>
                             )}
                           </td>
@@ -1486,25 +1578,6 @@ export default function AdminPanel() {
                               >
                                 <Trash2 size={14} />
                               </button>
-                              {/* Terima/Tolak - only show if not already decided */}
-                              {log.status !== "diterima" && (
-                                <button
-                                  onClick={() => handleApprove(log)}
-                                  className="p-2 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition cursor-pointer"
-                                  title="Terima Pemesanan"
-                                >
-                                  <CheckCircle size={14} />
-                                </button>
-                              )}
-                              {log.status !== "ditolak" && (
-                                <button
-                                  onClick={() => handleReject(log)}
-                                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                                  title="Tolak Pemesanan"
-                                >
-                                  <XCircle size={14} />
-                                </button>
-                              )}
                             </div>
                           </td>
                         </tr>
@@ -1612,60 +1685,93 @@ export default function AdminPanel() {
               <p className="text-xs text-slate-500 mt-1">Cetak laporan data atau ekspor data ke format spreadsheet Excel.</p>
             </div>
 
-            {/* Filter Date Range (Hidden in print layout) */}
+            {/* Filter Date Range & Type (Hidden in print layout) */}
             <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-4 print:hidden">
               <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Filter Laporan</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end">
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Jenis Laporan (Periode)</label>
+                  <select
+                    value={reportType}
+                    onChange={(e) => setReportType(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white cursor-pointer"
+                  >
+                    <option value="semua">Semua Periode (Kustom)</option>
+                    <option value="harian">Jadwal Harian (Hari Ini)</option>
+                    <option value="semester">Jadwal Per Semester (6 Bulan)</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Status Keterisian</label>
+                  <select
+                    value={reportStatus}
+                    onChange={(e) => setReportStatus(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white cursor-pointer"
+                  >
+                    <option value="semua">Semua Status</option>
+                    <option value="dipesan">Dipesan (Ada Kegiatan)</option>
+                    <option value="selesai">Selesai (Kegiatan Berakhir)</option>
+                    <option value="kosong">Belum Dipesan (Kosong)</option>
+                  </select>
+                </div>
+                
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tanggal Mulai</label>
                   <input
                     type="date"
+                    disabled={reportType !== "semua"}
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 disabled:opacity-50 disabled:bg-slate-50"
                   />
                 </div>
+                
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tanggal Selesai</label>
                   <input
                     type="date"
+                    disabled={reportType !== "semua"}
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 disabled:opacity-50 disabled:bg-slate-50"
                   />
                 </div>
-                <div className="flex gap-2 w-full col-span-1 sm:col-span-2 md:col-span-1">
-                  <button
-                    onClick={exportExcel}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-xs font-bold transition cursor-pointer"
-                  >
-                    <FileSpreadsheet size={14} />
-                    Excel
-                  </button>
-                  <button
-                    onClick={exportPDF}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-bold transition cursor-pointer"
-                  >
-                    <Download size={14} />
-                    PDF
-                  </button>
-                  <button
-                    onClick={printReport}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-md"
-                    style={{ backgroundColor: "#4b8fca" }}
-                  >
-                    <Printer size={14} />
-                    Cetak
-                  </button>
-                </div>
+              </div>
+
+              {/* Action Buttons Row */}
+              <div className="flex flex-wrap gap-2 pt-2 justify-end">
+                <button
+                  onClick={exportExcel}
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-xs font-bold transition cursor-pointer"
+                >
+                  <FileSpreadsheet size={14} />
+                  Ekspor Excel
+                </button>
+                <button
+                  onClick={exportPDF}
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-bold transition cursor-pointer"
+                >
+                  <Download size={14} />
+                  Ekspor PDF
+                </button>
+                <button
+                  onClick={printReport}
+                  className="flex items-center justify-center gap-1.5 px-5 py-2.5 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-md"
+                  style={{ backgroundColor: "#4b8fca" }}
+                >
+                  <Printer size={14} />
+                  Cetak Laporan
+                </button>
               </div>
             </div>
 
             {/* Print Document Header (Visible only in print layout) */}
             <div className="hidden print:block text-center border-b-2 border-slate-900 pb-5 mb-6">
               <h1 className="text-xl font-bold text-slate-950 font-display">LAPORAN LOG BOOK PENGGUNAAN LABORATORIUM</h1>
-              <p className="text-xs text-slate-600 mt-1">
-                Laporan tanggal: {startDate || "Awal"} s.d. {endDate || "Sekarang"}
+              <p className="text-xs text-slate-600 mt-1.5">
+                Periode: {reportType === "harian" ? "Harian (Hari Ini)" : reportType === "semester" ? "Semester (6 Bulan Terakhir)" : `Kustom (${startDate || "Awal"} s.d. {endDate || "Sekarang"})`} | Status: {reportStatus === "dipesan" ? "Dipesan (Ada Kegiatan)" : reportStatus === "selesai" ? "Selesai (Kegiatan Berakhir)" : reportStatus === "kosong" ? "Belum Dipesan (Kosong)" : "Semua Status"}
               </p>
             </div>
 
@@ -1698,12 +1804,20 @@ export default function AdminPanel() {
                             <div className="text-[9px] text-slate-400 mt-1">{log.prodi} | Kelas {log.kelas}</div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="font-semibold text-slate-800">{log.mahasiswa || "-"}</div>
-                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">{log.nim || "-"}</div>
+                            <div className="font-semibold text-slate-800">
+                              {log.status === "kosong" ? "Belum Dipesan" : (log.mahasiswa || "-")}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                              {log.status === "kosong" ? "Belum Dipesan" : (log.nim || "-")}
+                            </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-slate-700">{log.numberwa || "-"}</div>
-                            <div className="text-[9px] text-emerald-600 font-bold mt-1">{log.jumlahHadir || 0} Orang</div>
+                            <div className="text-slate-700">
+                              {log.status === "kosong" ? "Belum Dipesan" : (log.numberwa || "-")}
+                            </div>
+                            <div className={`text-[9px] font-bold mt-1 ${log.status === "kosong" ? "text-slate-400" : "text-emerald-600"}`}>
+                              {log.status === "kosong" ? "-" : `${log.jumlahHadir || 0} Orang`}
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -1862,19 +1976,35 @@ export default function AdminPanel() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
-                            {importedSchedules.map((s, idx) => (
-                              <tr key={idx} className="hover:bg-slate-50">
-                                <td className="p-2 font-medium">
-                                  {s.hari}, {s.tanggalInput}
-                                </td>
-                                <td className="p-2 truncate max-w-[100px]" title={s.matkul}>
-                                  {s.matkul}
-                                </td>
-                                <td className="p-2 truncate max-w-[80px]" title={s.ruang}>
-                                  {s.ruang}
-                                </td>
-                              </tr>
-                            ))}
+                            {importedSchedules.map((s, idx) => {
+                              const jamMulai = s.jam.split("-")[0]?.trim() || "08:00";
+                              const jamSelesai = s.jam.split("-")[1]?.trim() || "10:00";
+                              const normalizedJam = `${jamMulai} - ${jamSelesai}`.replace(/\s+/g, '');
+
+                              const isDuplicate = mySchedules.some(item => 
+                                item.ruang?.toLowerCase() === s.ruang?.toLowerCase() &&
+                                item.tanggalInput === s.tanggalInput &&
+                                item.jam?.replace(/\s+/g, '') === normalizedJam
+                              );
+
+                              return (
+                                <tr key={idx} className={`hover:bg-slate-50 ${isDuplicate ? 'bg-amber-50/50 hover:bg-amber-100/50' : ''}`}>
+                                  <td className="p-2 font-medium flex items-center gap-1">
+                                    {isDuplicate && <AlertCircle size={10} className="text-amber-500 shrink-0" />}
+                                    <span>{s.hari}, {s.tanggalInput}</span>
+                                  </td>
+                                  <td className="p-2 truncate max-w-[100px]" title={s.matkul}>
+                                    {s.matkul}
+                                  </td>
+                                  <td className={`p-2 truncate max-w-[80px] ${isDuplicate ? 'text-amber-700 font-bold' : ''}`} title={s.ruang}>
+                                    <div className="flex items-center gap-1 justify-between">
+                                      <span className="truncate">{s.ruang}</span>
+                                      {isDuplicate && <span className="text-[7px] bg-amber-100 text-amber-800 px-1 py-0.5 rounded font-black uppercase shrink-0">Duplikat</span>}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -2355,6 +2485,8 @@ export default function AdminPanel() {
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Jumlah Hadir</label>
                     <input
                       type="number"
+                      min="0"
+                      max="36"
                       value={editFormData.jumlahHadir}
                       onChange={(e) => setEditFormData({ ...editFormData, jumlahHadir: e.target.value })}
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"

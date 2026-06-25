@@ -2,6 +2,35 @@ import { useState, useContext, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { submitBooking } from "../services/bookingService";
+
+const parseScheduleTimes = (tanggalInput, jam) => {
+  if (!tanggalInput) return { start: null, end: null };
+  try {
+    const [year, month, day] = tanggalInput.split("-").map(Number);
+    let startHour = 8, startMinute = 0;
+    let endHour = 17, endMinute = 0;
+    if (jam && jam.includes("-")) {
+      const parts = jam.split("-").map(s => s.trim());
+      const startTimeStr = parts[0];
+      const endTimeStr = parts[1];
+      if (startTimeStr && startTimeStr.includes(":")) {
+        const [h, m] = startTimeStr.split(":").map(Number);
+        if (!isNaN(h)) startHour = h;
+        if (!isNaN(m)) startMinute = m;
+      }
+      if (endTimeStr && endTimeStr.includes(":")) {
+        const [h, m] = endTimeStr.split(":").map(Number);
+        if (!isNaN(h)) endHour = h;
+        if (!isNaN(m)) endMinute = m;
+      }
+    }
+    const start = new Date(year, month - 1, day, startHour, startMinute, 0);
+    const end = new Date(year, month - 1, day, endHour, endMinute, 0);
+    return { start, end };
+  } catch (e) {
+    return { start: null, end: null };
+  }
+};
 import {
   ClipboardList, Send, AlertCircle, Calendar, Clock, BookOpen,
   User, Hash, Phone, Users, MapPin, CheckCircle, Search, Filter, X
@@ -15,6 +44,7 @@ export default function LaboratoryBookingForm() {
     mySchedules,
     setMySchedules,
     refreshData,
+    laboratories,
   } = useContext(AppContext);
 
   useEffect(() => {
@@ -24,9 +54,9 @@ export default function LaboratoryBookingForm() {
   // Pre-fill lab name from dashboard click
   const preselectedLabName = selectedLaboratory?.name || "";
 
-  // Only show schedules that have been created by admin (without student details)
+  // Only show schedules that are empty (not yet booked by students)
   const availableSchedules = mySchedules.filter(
-    (s) => s.mahasiswa === "Admin (Penjadwalan)" || s.mahasiswa === "-" || !s.mahasiswa
+    (s) => s.status === "kosong"
   );
 
   // Search & filter state — pre-fill filterRuang if came from lab card
@@ -34,9 +64,16 @@ export default function LaboratoryBookingForm() {
   const [filterHari, setFilterHari] = useState("");
   const [filterRuang, setFilterRuang] = useState(preselectedLabName);
 
-  // Unique list of hari & ruang for filter dropdowns
+  // Unique list of hari for filter dropdown
   const uniqueHari = [...new Set(availableSchedules.map((s) => s.hari))].filter(Boolean);
-  const uniqueRuang = [...new Set(availableSchedules.map((s) => s.ruang))].filter(Boolean);
+
+  // Get all laboratory names from context to display all labs in the select dropdown
+  const uniqueRuang = useMemo(() => {
+    if (laboratories && laboratories.length > 0) {
+      return laboratories.map((l) => l.name);
+    }
+    return [...new Set(availableSchedules.map((s) => s.ruang))].filter(Boolean);
+  }, [laboratories, availableSchedules]);
 
   // Apply search & filters
   const filteredSchedules = availableSchedules.filter((s) => {
@@ -49,7 +86,7 @@ export default function LaboratoryBookingForm() {
       s.prodi?.toLowerCase().includes(q) ||
       s.kelas?.toLowerCase().includes(q);
     const matchHari = !filterHari || s.hari === filterHari;
-    const matchRuang = !filterRuang || s.ruang === filterRuang;
+    const matchRuang = !filterRuang || s.ruang?.toLowerCase() === filterRuang.toLowerCase();
     return matchSearch && matchHari && matchRuang;
   });
 
@@ -131,6 +168,8 @@ export default function LaboratoryBookingForm() {
       newErrors.jumlahHadir = "Jumlah yang hadir wajib diisi.";
     } else if (parseInt(formData.jumlahHadir, 10) < 1) {
       newErrors.jumlahHadir = "Jumlah hadir minimal 1 orang.";
+    } else if (parseInt(formData.jumlahHadir, 10) > 36) {
+      newErrors.jumlahHadir = "Jumlah hadir maksimal 36 orang.";
     }
 
     setErrors(newErrors);
@@ -163,7 +202,7 @@ export default function LaboratoryBookingForm() {
       if (result.success) {
         setSelectedLaboratory(null);
         alert(
-          `Pemesanan ${selectedSchedule?.ruang} berhasil dikirim!\nStatus: Menunggu konfirmasi admin.\nPantau notifikasi di ikon 🔔 di atas.`
+          `Pemesanan ${selectedSchedule?.ruang} berhasil dikirim!\nStatus: Dipesan.`
         );
         navigate("/dashboard");
       } else {
@@ -202,7 +241,7 @@ export default function LaboratoryBookingForm() {
 
           {/* Lab info banner — schedules count for this lab */}
           {preselectedLabName && (() => {
-            const labSchedules = availableSchedules.filter(s => s.ruang === preselectedLabName);
+            const labSchedules = availableSchedules.filter(s => s.ruang?.toLowerCase() === preselectedLabName.toLowerCase());
             return (
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2 bg-white/15 rounded-xl px-3 py-2">
@@ -290,15 +329,16 @@ export default function LaboratoryBookingForm() {
                         value={filterRuang}
                         onChange={(e) => setFilterRuang(e.target.value)}
                         className={`w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 cursor-pointer transition ${
-                          filterRuang && filterRuang === preselectedLabName
+                          filterRuang && filterRuang.toLowerCase() === preselectedLabName.toLowerCase()
                             ? "border-blue-400 bg-blue-50 text-blue-700 font-semibold"
                             : "border-slate-200 bg-white"
                         }`}
                       >
                         <option value="">Semua Laboratorium</option>
-                        {uniqueRuang.map((r) => (
-                          <option key={r} value={r}>{r}</option>
-                        ))}
+                        {uniqueRuang.map((r) => {
+                          const displayName = r.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+                          return <option key={r} value={r}>{displayName}</option>;
+                        })}
                       </select>
                     </div>
 
@@ -315,10 +355,10 @@ export default function LaboratoryBookingForm() {
                   </div>
 
                   {/* Active lab badge — shown when came from lab card */}
-                  {preselectedLabName && filterRuang === preselectedLabName && (
+                  {preselectedLabName && filterRuang.toLowerCase() === preselectedLabName.toLowerCase() && (
                     <div className="flex items-center gap-1.5 text-[10px] text-blue-600 font-semibold">
                       <MapPin size={10} />
-                      <span>Menampilkan jadwal untuk <strong>{preselectedLabName}</strong> &mdash; pilih lab lain dari dropdown atau tekan Reset</span>
+                      <span>Menampilkan jadwal untuk <strong>{preselectedLabName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</strong> &mdash; pilih lab lain dari dropdown atau tekan Reset</span>
                     </div>
                   )}
 
@@ -372,25 +412,53 @@ export default function LaboratoryBookingForm() {
                 ) : (
                   <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1 scrollbar-thin">
                     {filteredSchedules.map((s) => {
-                      const isSelected = String(s.id) === selectedScheduleId;
+                      const { start, end } = parseScheduleTimes(s.tanggalInput, s.jam);
+                      const now = new Date();
+                      const isOngoing = start && end && now >= start && now <= end;
+                      const isFinished = end && now > end;
+                      const isBookable = start && now < start;
+                      const isDisabled = isOngoing || isFinished;
+                      const isSelected = !isDisabled && String(s.id) === selectedScheduleId;
+
+                      let cardClass = "";
+                      if (isDisabled) {
+                        cardClass = "border-slate-100 bg-slate-100/50 opacity-60 cursor-not-allowed";
+                      } else if (isSelected) {
+                        cardClass = "border-blue-500 bg-blue-50/60 shadow-sm cursor-pointer";
+                      } else {
+                        cardClass = "border-slate-100 bg-slate-50/50 hover:border-blue-200 hover:bg-blue-50/20 cursor-pointer";
+                      }
+
                       return (
                         <button
                           key={s.id}
                           type="button"
-                          onClick={() => handleScheduleSelect(String(s.id))}
-                          className={`w-full text-left p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                            isSelected
-                              ? "border-blue-500 bg-blue-50/60 shadow-sm"
-                              : "border-slate-100 bg-slate-50/50 hover:border-blue-200 hover:bg-blue-50/20"
-                          }`}
+                          disabled={isDisabled}
+                          onClick={() => !isDisabled && handleScheduleSelect(String(s.id))}
+                          className={`w-full text-left p-4 rounded-xl border-2 transition-all ${cardClass}`}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
-                              {/* Lab name badge */}
-                              <div className="flex items-center gap-2 mb-1.5">
+                              {/* Lab name and Status badges */}
+                              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                                 <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md text-white" style={{ backgroundColor: "#4b8fca" }}>
                                   {s.ruang}
                                 </span>
+                                {isOngoing && (
+                                  <span className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-amber-100 border border-amber-200 text-amber-800">
+                                    Sedang Digunakan
+                                  </span>
+                                )}
+                                {isFinished && (
+                                  <span className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-slate-100 border border-slate-200 text-slate-500">
+                                    Sesi Selesai
+                                  </span>
+                                )}
+                                {isBookable && (
+                                  <span className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700">
+                                    Tersedia
+                                  </span>
+                                )}
                               </div>
                               {/* Matkul & Dosen */}
                               <p className="text-sm font-bold text-slate-800 leading-tight">{s.matkul}</p>
@@ -409,11 +477,13 @@ export default function LaboratoryBookingForm() {
                               </div>
                             </div>
                             {/* Check indicator */}
-                            <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                              isSelected ? "border-blue-500 bg-blue-500" : "border-slate-300"
-                            }`}>
-                              {isSelected && <CheckCircle size={13} className="text-white" />}
-                            </div>
+                            {!isDisabled && (
+                              <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                isSelected ? "border-blue-500 bg-blue-500" : "border-slate-300"
+                              }`}>
+                                {isSelected && <CheckCircle size={13} className="text-white" />}
+                              </div>
+                            )}
                           </div>
                         </button>
                       );
@@ -554,6 +624,7 @@ export default function LaboratoryBookingForm() {
                     name="jumlahHadir"
                     placeholder="Estimasi mahasiswa hadir"
                     min="1"
+                    max="36"
                     value={formData.jumlahHadir}
                     onChange={handleChange}
                     className={`w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm bg-slate-50/50 transition ${

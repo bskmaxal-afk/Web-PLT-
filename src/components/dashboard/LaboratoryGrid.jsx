@@ -206,13 +206,11 @@ export default function LaboratoryGrid() {
     },
   ];
 
-  /**
-   * Handle lab card click — saves lab to context and navigates to booking.
-   * The booking form will read selectedLaboratory from context to pre-fill.
-   */
   const handleSelectLaboratory = (lab) => {
     // Find the full lab data from context (labs.js) for richer info
-    const labFromContext = laboratories.find((l) => l.id === lab.id);
+    const labFromContext = laboratories.find(
+      (l) => l.name.toLowerCase() === lab.name.toLowerCase()
+    );
     setSelectedLaboratory(labFromContext || { id: lab.id, name: lab.name });
     navigate("/booking");
   };

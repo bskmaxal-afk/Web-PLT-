@@ -108,8 +108,37 @@ const mapBackendSchedule = (item) => {
     nim: "-",
     numberwa: "-",
     jumlahHadir: 0,
-    status: undefined,
+    status: "kosong",
   };
+};
+
+/**
+ * Helper: Check if a schedule's time has passed compared to local current date and time.
+ * @param {string} tanggalInput - YYYY-MM-DD format
+ * @param {string} jam - HH:MM - HH:MM format
+ * @returns {boolean}
+ */
+const isScheduleFinished = (tanggalInput, jam) => {
+  if (!tanggalInput) return false;
+  try {
+    const [year, month, day] = tanggalInput.split("-").map(Number);
+    let endHour = 17;
+    let endMinute = 0;
+    if (jam && jam.includes("-")) {
+      const parts = jam.split("-").map(s => s.trim());
+      const endTimeStr = parts[1];
+      if (endTimeStr && endTimeStr.includes(":")) {
+        const [h, m] = endTimeStr.split(":").map(Number);
+        if (!isNaN(h)) endHour = h;
+        if (!isNaN(m)) endMinute = m;
+      }
+    }
+    const endDateTime = new Date(year, month - 1, day, endHour, endMinute, 0);
+    const now = new Date();
+    return now > endDateTime;
+  } catch (e) {
+    return false;
+  }
 };
 
 /**
@@ -223,7 +252,7 @@ const mapBackendLogbook = (item, schedules = []) => {
     nim: item.nim || "-",
     numberwa: item.no_wa || item.noWa || item.nomorWa || item.nomor_wa || item.numberwa || "-",
     jumlahHadir: parseInt(item.jumlah_hadir || item.jumlahHadir || item.jumlahPeserta || item.jumlah_peserta || 0, 10),
-    status: item.status || "pending",
+    status: isScheduleFinished(isoTanggal, jam) ? "selesai" : "dipesan",
   };
 };
 
@@ -293,8 +322,14 @@ export const AppProvider = ({ children }) => {
         : [];
 
       // Gabungkan: logbook entries menimpa jadwal yang sudah di-booking.
-      // Jadwal yang sudah punya logbook → tampilkan versi logbook-nya.
-      const bookedScheduleIds = new Set(logbooks.map(lb => lb._scheduleId).filter(lbId => lbId !== null && lbId !== undefined));
+      // Jadwal yang sudah punya logbook aktif → tampilkan versi logbook-nya.
+      // Jika logbook sudah selesai (berlalu), kembalikan status jadwal ke "kosong" agar tampak kosong kembali.
+      const bookedScheduleIds = new Set(
+        logbooks
+          .filter(lb => !isScheduleFinished(lb.tanggalInput, lb.jam))
+          .map(lb => lb._scheduleId)
+          .filter(lbId => lbId !== null && lbId !== undefined)
+      );
       const unbookedSchedules = schedules.filter(s => !bookedScheduleIds.has(s._backendId) && !bookedScheduleIds.has(s.id));
 
       setMySchedules([...logbooks, ...unbookedSchedules]);

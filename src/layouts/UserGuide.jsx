@@ -2,9 +2,9 @@
 
 export default function UserGuide() {
   const steps = [
-    { step: '01', title: 'Pilih Ruang & Jadwal', desc: 'Cek ketersediaan di menu Informasi Lab lalu isi formulir di halaman Pemesanan Ruang.' },
-    { step: '02', title: 'Tunggu Validasi Admin', desc: 'Admin laboratorium akan memeriksa kesesuaian agenda dan jadwal ruang. Status terpantau di halaman Jadwal Saya.' },
-    { step: '03', title: 'Check-in & Gunakan Lab', desc: 'Jika disetujui, datang tepat waktu ke lab sesuai sesi. Hubungi laboran/admin di lokasi untuk membuka ruangan.' },
+    { step: '01', title: 'Pilih Ruang & Jadwal', desc: 'Cek ketersediaan di menu Informasi Lab lalu buka menu Pemesanan Ruang.' },
+    { step: '02', title: 'Isi Formulir Pemesanan', desc: 'Lengkapi formulir pengajuan ruang dengan data penanggung jawab, nomor WhatsApp, mata kuliah, dan keterangan kegiatan.' },
+    { step: '03', title: 'Check-in & Gunakan Lab', desc: 'Datang tepat waktu ke lab sesuai sesi yang dipesan. Hubungi laboran/admin di lokasi untuk membuka ruangan.' },
   ];
 
   return (

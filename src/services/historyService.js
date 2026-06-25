@@ -9,7 +9,7 @@ import API from "./api";
  */
 export const deleteEntry = async (id) => {
   try {
-    await API.delete(`/get/${id}`);
+    await API.delete(`/delete/${id}`);
     return { success: true };
   } catch (error) {
     const message =
