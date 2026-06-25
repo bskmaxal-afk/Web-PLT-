@@ -54,9 +54,9 @@ export default function LaboratoryBookingForm() {
   // Pre-fill lab name from dashboard click
   const preselectedLabName = selectedLaboratory?.name || "";
 
-  // Only show schedules that are empty (not yet booked by students)
+  // Show empty, pending, and approved schedules
   const availableSchedules = mySchedules.filter(
-    (s) => s.status === "kosong"
+    (s) => s.status === "kosong" || s.status === "dipesan" || s.status === "diterima"
   );
 
   // Search & filter state — pre-fill filterRuang if came from lab card
@@ -442,8 +442,9 @@ export default function LaboratoryBookingForm() {
                       const now = new Date();
                       const isOngoing = start && end && now >= start && now <= end;
                       const isFinished = end && now > end;
-                      const isBookable = start && now < start;
-                      const isDisabled = isOngoing || isFinished;
+                      const isBooked = s.status === "dipesan" || s.status === "diterima";
+                      const isBookable = start && now < start && !isBooked;
+                      const isDisabled = isOngoing || isFinished || isBooked;
                       const isSelected = !isDisabled && String(s.id) === selectedScheduleId;
 
                       let cardClass = "";
@@ -478,6 +479,11 @@ export default function LaboratoryBookingForm() {
                                 {isFinished && (
                                   <span className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-slate-100 border border-slate-200 text-slate-500">
                                     Sesi Selesai
+                                  </span>
+                                )}
+                                {isBooked && (
+                                  <span className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-red-50 border border-red-200 text-red-600 font-semibold">
+                                    Sudah Dipesan
                                   </span>
                                 )}
                                 {isBookable && (
