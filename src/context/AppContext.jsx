@@ -1,10 +1,19 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useCallback, useEffect } from "react";
+import { createContext, useState, useCallback, useEffect, useRef } from "react";
 import { labs } from "../data/labs";
 import { getAllSchedules } from "../services/scheduleService";
 import { getAllLogbooks } from "../services/bookingService";
-import { isAuthenticated } from "../services/authService";
+import { isAuthenticated, isTokenExpired, getTokenRemainingTime, logoutAdmin } from "../services/authService";
 import { getLabs } from "../services/laboratoryService";
+import {
+  connectSocket,
+  disconnectSocket,
+  onLogbookUpdate,
+  offLogbookUpdate,
+  onPenggunaanUpdate,
+  offPenggunaanUpdate,
+  isSocketConnected as checkSocketConnected,
+} from "../services/socketService";
 
 export const AppContext = createContext();
 
@@ -264,6 +273,54 @@ export const AppProvider = ({ children }) => {
   // Read from localStorage so login persists across browser refreshes
   const [isAdminAuthenticated, setAdminAuthenticated] = useState(() => isAuthenticated());
 
+  // Token expiration state — triggers popup + redirect when JWT expires
+  const [tokenExpired, setTokenExpired] = useState(false);
+  const tokenTimerRef = useRef(null);
+
+  /**
+   * Called when admin acknowledges the token expired popup.
+   * Clears auth state and resets tokenExpired flag.
+   */
+  const handleTokenExpired = useCallback(() => {
+    logoutAdmin();
+    setAdminAuthenticated(false);
+    setTokenExpired(false);
+  }, []);
+
+  // Token expiration checker — runs every 30 seconds while admin is authenticated
+  useEffect(() => {
+    if (!isAdminAuthenticated) {
+      // Clear timer when not authenticated
+      if (tokenTimerRef.current) {
+        clearInterval(tokenTimerRef.current);
+        tokenTimerRef.current = null;
+      }
+      return;
+    }
+
+    // Check immediately on mount/login
+    if (isTokenExpired()) {
+      setTokenExpired(true);
+      return;
+    }
+
+    // Set up interval to check every 30 seconds
+    tokenTimerRef.current = setInterval(() => {
+      if (isTokenExpired()) {
+        setTokenExpired(true);
+        clearInterval(tokenTimerRef.current);
+        tokenTimerRef.current = null;
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => {
+      if (tokenTimerRef.current) {
+        clearInterval(tokenTimerRef.current);
+        tokenTimerRef.current = null;
+      }
+    };
+  }, [isAdminAuthenticated]);
+
   // Selected laboratory from card click (TUGAS 2)
   const [selectedLaboratory, setSelectedLaboratory] = useState(null);
 
@@ -301,9 +358,44 @@ export const AppProvider = ({ children }) => {
   // Loading state for data fetching
   const [isDataLoading, setIsDataLoading] = useState(false);
 
+  // ────────────────────────────────────────────────
+  // Refs untuk menyimpan raw data terakhir dari backend
+  // Digunakan agar saat satu event socket masuk (misal logbook saja),
+  // kita masih punya data schedules terakhir untuk merge.
+  // ────────────────────────────────────────────────
+  const rawSchedulesRef = useRef([]);
+  const rawLogbooksRef = useRef([]);
+
   /**
-   * Fetch jadwal + logbook dari backend dan gabungkan ke mySchedules.
-   * Dipanggil setelah admin login berhasil, dan setelah operasi CRUD.
+   * Gabungkan (merge) data schedules + logbooks menjadi mySchedules.
+   * Logbook entries menimpa jadwal yang sudah di-booking.
+   * Jadwal yang sudah punya logbook aktif → tampilkan versi logbook-nya.
+   * 
+   * @param {Array} rawSchedules - Array data jadwal mentah dari backend
+   * @param {Array} rawLogbooks  - Array data logbook mentah dari backend (sudah JOIN)
+   */
+  const mergeAndUpdateSchedules = useCallback((rawSchedules, rawLogbooks) => {
+    const schedules = rawSchedules.map(mapBackendSchedule);
+    const logbooks = rawLogbooks.map(item => mapBackendLogbook(item, schedules));
+
+    // Gabungkan: logbook entries menimpa jadwal yang sudah di-booking.
+    const bookedScheduleIds = new Set(
+      logbooks
+        .filter(lb => !isScheduleFinished(lb.tanggalInput, lb.jam))
+        .map(lb => lb._scheduleId)
+        .filter(lbId => lbId !== null && lbId !== undefined)
+    );
+    const unbookedSchedules = schedules.filter(
+      s => !bookedScheduleIds.has(s._backendId) && !bookedScheduleIds.has(s.id)
+    );
+
+    setMySchedules([...logbooks, ...unbookedSchedules]);
+  }, []);
+
+  /**
+   * Fetch jadwal + logbook dari backend via HTTP dan gabungkan ke mySchedules.
+   * Dipanggil saat initial load dan setelah operasi CRUD lokal.
+   * Juga menyimpan raw data ke refs untuk digunakan oleh socket handlers.
    */
   const refreshData = useCallback(async () => {
     setIsDataLoading(true);
@@ -313,32 +405,25 @@ export const AppProvider = ({ children }) => {
         getAllLogbooks(),
       ]);
 
-      const schedules = schedRes.success
-        ? schedRes.data.map(mapBackendSchedule)
+      const rawSchedules = schedRes.success
+        ? (Array.isArray(schedRes.data) ? schedRes.data : [])
+        : [];
+      const rawLogbooks = logRes.success
+        ? (Array.isArray(logRes.data) ? logRes.data : [])
         : [];
 
-      const logbooks = logRes.success
-        ? logRes.data.map(item => mapBackendLogbook(item, schedules))
-        : [];
+      // Simpan ke refs
+      rawSchedulesRef.current = rawSchedules;
+      rawLogbooksRef.current = rawLogbooks;
 
-      // Gabungkan: logbook entries menimpa jadwal yang sudah di-booking.
-      // Jadwal yang sudah punya logbook aktif → tampilkan versi logbook-nya.
-      // Jika logbook sudah selesai (berlalu), kembalikan status jadwal ke "kosong" agar tampak kosong kembali.
-      const bookedScheduleIds = new Set(
-        logbooks
-          .filter(lb => !isScheduleFinished(lb.tanggalInput, lb.jam))
-          .map(lb => lb._scheduleId)
-          .filter(lbId => lbId !== null && lbId !== undefined)
-      );
-      const unbookedSchedules = schedules.filter(s => !bookedScheduleIds.has(s._backendId) && !bookedScheduleIds.has(s.id));
-
-      setMySchedules([...logbooks, ...unbookedSchedules]);
+      // Map dan merge
+      mergeAndUpdateSchedules(rawSchedules, rawLogbooks);
     } catch (err) {
       console.error("Gagal mengambil data dari server:", err);
     } finally {
       setIsDataLoading(false);
     }
-  }, []);
+  }, [mergeAndUpdateSchedules]);
 
   // Fetch daftar laboratorium dari backend on mount
   useEffect(() => {
@@ -360,6 +445,59 @@ export const AppProvider = ({ children }) => {
     refreshData();
   }, [refreshData]);
 
+  // ────────────────────────────────────────────────
+  // Socket.IO Realtime Connection
+  // ────────────────────────────────────────────────
+  const [socketConnected, setSocketConnected] = useState(false);
+
+  useEffect(() => {
+    /**
+     * Handler event "penggunaanlab:update"
+     * Server mengirim ARRAY LENGKAP data penggunaan lab dari database.
+     * Langsung update tanpa fetch ulang via HTTP.
+     */
+    const handlePenggunaanUpdate = (data) => {
+      console.log("[Socket.IO] 📥 penggunaanlab:update diterima —", Array.isArray(data) ? data.length + " items" : data);
+      const rawSchedules = Array.isArray(data) ? data : [];
+      rawSchedulesRef.current = rawSchedules;
+      mergeAndUpdateSchedules(rawSchedules, rawLogbooksRef.current);
+    };
+
+    /**
+     * Handler event "logbook:update"
+     * Server mengirim ARRAY LENGKAP data logbook dari database (sudah JOIN).
+     * Langsung update tanpa fetch ulang via HTTP.
+     */
+    const handleLogbookUpdate = (data) => {
+      console.log("[Socket.IO] 📥 logbook:update diterima —", Array.isArray(data) ? data.length + " items" : data);
+      const rawLogbooks = Array.isArray(data) ? data : [];
+      rawLogbooksRef.current = rawLogbooks;
+      mergeAndUpdateSchedules(rawSchedulesRef.current, rawLogbooks);
+    };
+
+    // Buat koneksi socket
+    connectSocket({
+      onConnect: () => setSocketConnected(true),
+      onDisconnect: () => setSocketConnected(false),
+      onError: () => setSocketConnected(false),
+    });
+
+    // Subscribe ke events
+    onPenggunaanUpdate(handlePenggunaanUpdate);
+    onLogbookUpdate(handleLogbookUpdate);
+
+    // Cek status awal
+    setSocketConnected(checkSocketConnected());
+
+    // Cleanup saat unmount
+    return () => {
+      offPenggunaanUpdate(handlePenggunaanUpdate);
+      offLogbookUpdate(handleLogbookUpdate);
+      disconnectSocket();
+      setSocketConnected(false);
+    };
+  }, [mergeAndUpdateSchedules]);
+
   return (
     <AppContext.Provider
       value={{
@@ -373,6 +511,8 @@ export const AppProvider = ({ children }) => {
         setMySchedules,
         isAdminAuthenticated,
         setAdminAuthenticated,
+        tokenExpired,
+        handleTokenExpired,
         notifications,
         setNotifications,
         addNotification,
@@ -380,6 +520,7 @@ export const AppProvider = ({ children }) => {
         markAllNotificationsRead,
         refreshData,
         isDataLoading,
+        socketConnected,
       }}
     >
       {children}

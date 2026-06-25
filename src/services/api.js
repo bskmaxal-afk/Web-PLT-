@@ -1,7 +1,9 @@
 import axios from "axios";
 
+export const BACKEND_URL = "http://172.20.32.62:3000";
+
 const API = axios.create({
-  baseURL: "http://172.20.32.62:3000",
+  baseURL: BACKEND_URL,
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",

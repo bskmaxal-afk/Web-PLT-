@@ -46,8 +46,49 @@ export const loginAdmin = async ({ username, password }) => {
   }
 };
 
+// Token expires after 1 hour (in milliseconds)
+const TOKEN_EXPIRY_MS = 60 * 60 * 1000;
+
+/**
+ * Check if the admin token has expired (1 hour after login).
+ * @returns {boolean} true if expired or no login data exists
+ */
+export const isTokenExpired = () => {
+  try {
+    const authData = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!authData) return true;
+    const parsed = JSON.parse(authData);
+    if (!parsed.isAuthenticated || !parsed.loginTime) return true;
+    const loginTime = new Date(parsed.loginTime).getTime();
+    const now = Date.now();
+    return (now - loginTime) >= TOKEN_EXPIRY_MS;
+  } catch {
+    return true;
+  }
+};
+
+/**
+ * Get remaining time before token expires (in milliseconds).
+ * @returns {number} ms remaining, or 0 if already expired
+ */
+export const getTokenRemainingTime = () => {
+  try {
+    const authData = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!authData) return 0;
+    const parsed = JSON.parse(authData);
+    if (!parsed.isAuthenticated || !parsed.loginTime) return 0;
+    const loginTime = new Date(parsed.loginTime).getTime();
+    const elapsed = Date.now() - loginTime;
+    const remaining = TOKEN_EXPIRY_MS - elapsed;
+    return remaining > 0 ? remaining : 0;
+  } catch {
+    return 0;
+  }
+};
+
 /**
  * Check if admin is currently authenticated.
+ * Also checks if the token has expired.
  * @returns {boolean}
  */
 export const isAuthenticated = () => {
@@ -55,7 +96,10 @@ export const isAuthenticated = () => {
     const authData = localStorage.getItem(AUTH_STORAGE_KEY);
     if (!authData) return false;
     const parsed = JSON.parse(authData);
-    return parsed.isAuthenticated === true;
+    if (parsed.isAuthenticated !== true) return false;
+    // Check token expiration
+    if (isTokenExpired()) return false;
+    return true;
   } catch {
     return false;
   }

@@ -1,4 +1,5 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { 
   Lock, Eye, EyeOff, LayoutDashboard, FileText, BarChart2, LogOut,
@@ -22,8 +23,13 @@ export default function AdminPanel() {
     laboratories,
     addNotification,
     refreshData,
-    isDataLoading
+    isDataLoading,
+    tokenExpired,
+    handleTokenExpired,
+    socketConnected
   } = useContext(AppContext);
+
+  const navigate = useNavigate();
 
   // Auth local states
   const [username, setUsername] = useState("");
@@ -474,6 +480,23 @@ export default function AdminPanel() {
     const matchesStatus = filterStatus ? log.status === filterStatus : true;
 
     return matchesSearch && matchesHari && matchesProdi && matchesStatus;
+  }).sort((a, b) => {
+    // FIFO: First In First Out — urutkan berdasarkan tanggal & jam paling awal dulu
+    // 1. Sort by tanggalInput (YYYY-MM-DD) ascending
+    const dateA = a.tanggalInput || "";
+    const dateB = b.tanggalInput || "";
+    if (dateA !== dateB) return dateA.localeCompare(dateB);
+
+    // 2. Jika tanggal sama, sort by jam mulai ascending
+    // Jam format: "HH:MM - HH:MM", ambil jam mulai saja
+    const getStartTime = (jam) => {
+      if (!jam || jam === "-") return "00:00";
+      const parts = jam.split("-");
+      return (parts[0] || "00:00").trim();
+    };
+    const timeA = getStartTime(a.jam);
+    const timeB = getStartTime(b.jam);
+    return timeA.localeCompare(timeB);
   });
 
   // Data Penggunaan Pagination
@@ -1171,6 +1194,24 @@ export default function AdminPanel() {
             </div>
           </div>
 
+          {/* Realtime Status Indicator */}
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50/50">
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: socketConnected ? '#22c55e' : '#ef4444',
+              display: 'inline-block',
+              boxShadow: socketConnected 
+                ? '0 0 6px rgba(34, 197, 94, 0.6)' 
+                : '0 0 6px rgba(239, 68, 68, 0.6)',
+              animation: socketConnected ? 'pulse-green 2s infinite' : 'none',
+            }} />
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              {socketConnected ? 'Realtime Aktif' : 'Offline'}
+            </span>
+          </div>
+
           {/* Menus */}
           <nav className="space-y-1.5">
             <button
@@ -1228,13 +1269,23 @@ export default function AdminPanel() {
         </div>
 
         {/* Logout Button */}
-        <button
-          onClick={handleLogout}
-          className="w-full mt-8 flex items-center gap-3.5 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl text-xs font-bold transition cursor-pointer"
-        >
-          <LogOut size={16} />
-          Keluar (Logout)
-        </button>
+        <div className="mt-8 space-y-3">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3.5 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl text-xs font-bold transition cursor-pointer"
+          >
+            <LogOut size={16} />
+            Keluar (Logout)
+          </button>
+        </div>
+
+        {/* Inline animation for realtime indicator pulse */}
+        <style>{`
+          @keyframes pulse-green {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+        `}</style>
       </aside>
 
       {/* CONTENT AREA */}
@@ -1749,20 +1800,14 @@ export default function AdminPanel() {
                   <FileSpreadsheet size={14} />
                   Ekspor Excel
                 </button>
-                <button
-                  onClick={exportPDF}
-                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-bold transition cursor-pointer"
-                >
-                  <Download size={14} />
-                  Ekspor PDF
-                </button>
+                
                 <button
                   onClick={printReport}
                   className="flex items-center justify-center gap-1.5 px-5 py-2.5 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-md"
-                  style={{ backgroundColor: "#4b8fca" }}
+                  style={{ backgroundColor: "#db1b1b" }}
                 >
                   <Printer size={14} />
-                  Cetak Laporan
+                  Cetak Laporan PDF
                 </button>
               </div>
             </div>
@@ -2528,6 +2573,118 @@ export default function AdminPanel() {
       )}
 
 
+
+      {/* TOKEN EXPIRED POPUP OVERLAY */}
+      {tokenExpired && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(15, 23, 42, 0.7)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          animation: 'fadeIn 0.3s ease-out',
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '24px',
+            padding: '40px 36px 32px',
+            maxWidth: '420px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05)',
+            animation: 'popupSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}>
+            {/* Icon */}
+            <div style={{
+              width: '72px',
+              height: '72px',
+              borderRadius: '20px',
+              background: 'linear-gradient(135deg, #f97316, #ef4444)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+              boxShadow: '0 8px 24px rgba(239, 68, 68, 0.3)',
+            }}>
+              <Clock size={36} color="white" />
+            </div>
+
+            {/* Title */}
+            <h3 style={{
+              fontSize: '20px',
+              fontWeight: 800,
+              color: '#1e293b',
+              marginBottom: '12px',
+              fontFamily: 'inherit',
+            }}>
+              Sesi Admin Berakhir
+            </h3>
+
+            {/* Message */}
+            <p style={{
+              fontSize: '14px',
+              color: '#64748b',
+              lineHeight: 1.6,
+              marginBottom: '28px',
+            }}>
+              Token admin Anda sudah habis, silahkan login ulang
+            </p>
+
+            {/* Button */}
+            <button
+              onClick={() => {
+                handleTokenExpired();
+                navigate('/dashboard');
+              }}
+              style={{
+                width: '100%',
+                padding: '14px 24px',
+                background: 'linear-gradient(135deg, #4b8fca, #3b7dd8)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '14px',
+                fontSize: '14px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 16px rgba(75, 143, 202, 0.35)',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(75, 143, 202, 0.45)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(75, 143, 202, 0.35)';
+              }}
+            >
+              Kembali ke Halaman Utama
+            </button>
+          </div>
+
+          {/* Inline keyframe animations */}
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes popupSlideIn {
+              from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+              }
+              to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+              }
+            }
+          `}</style>
+        </div>
+      )}
 
     </div>
   );
