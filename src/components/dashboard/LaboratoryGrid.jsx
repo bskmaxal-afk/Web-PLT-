@@ -31,9 +31,18 @@ export default function LaboratoryGrid() {
   const labsData = [
     {
       id: 1,
+      name: "Lab Matematika",
+      description: "Laboratorium untuk praktikum dan penelitian matematika.",
+      icon: "sqrt",
+      colorClass: "bg-teal-500",
+      textClass: "text-teal-600",
+      borderClass: "border-teal-500/20 hover:border-teal-500",
+      hoverBtnClass: "hover:bg-teal-500 hover:text-white",
+    },
+    {
+      id: 2,
       name: "Lab Aplikasi 1",
-      description:
-        "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.",
+      description: "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.",
       icon: "Computer",
       colorClass: "bg-emerald-500",
       textClass: "text-emerald-600",
@@ -41,10 +50,9 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-emerald-500 hover:text-white",
     },
     {
-      id: 2,
+      id: 3,
       name: "Lab Aplikasi 2",
-      description:
-        "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.",
+      description: "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.",
       icon: "Computer",
       colorClass: "bg-emerald-500",
       textClass: "text-blue-600",
@@ -52,7 +60,7 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-blue-500 hover:text-white",
     },
     {
-      id: 16,
+      id: 5,
       name: "Lab Aplikasi 3",
       description: "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.",
       icon: "Computer",
@@ -62,10 +70,9 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-blue-500 hover:text-white",
     },
     {
-      id: 3,
+      id: 8,
       name: "Lab Data Sains",
-      description:
-        "Laboratorium untuk praktikum analisis data, machine learning, dan penelitian data sains.",
+      description: "Laboratorium untuk praktikum analisis data, machine learning, dan penelitian data sains.",
       icon: "Beaker",
       colorClass: "bg-purple-500",
       textClass: "text-purple-600",
@@ -73,10 +80,9 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-purple-500 hover:text-white",
     },
     {
-      id: 4,
+      id: 9,
       name: "Lab Jaringan Komputer",
-      description:
-        "Laboratorium untuk praktikum jaringan komputer, konfigurasi perangkat, dan administrasi jaringan.",
+      description: "Laboratorium untuk praktikum jaringan komputer, konfigurasi perangkat, dan administrasi jaringan.",
       icon: "Router",
       colorClass: "bg-orange-500",
       textClass: "text-orange-600",
@@ -84,21 +90,9 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-orange-500 hover:text-white",
     },
     {
-      id: 5,
-      name: "Lab Matematika",
-      description:
-        "Laboratorium untuk praktikum dan penelitian matematika",
-      icon: "sqrt",
-      colorClass: "bg-blue-400",
-      textClass: "text-teal-600",
-      borderClass: "border-teal-500/20 hover:border-teal-500",
-      hoverBtnClass: "hover:bg-teal-500 hover:text-white",
-    },
-    {
-      id: 6,
-      name: "Lab Multimedia 1",
-      description:
-        "Laboratorium untuk praktikum desain grafis, editing multimedia, dan produksi konten digital.",
+      id: 11,
+      name: "Lab Multi Media 1",
+      description: "Laboratorium untuk praktikum desain grafis, editing multimedia, dan produksi konten digital.",
       icon: "Clapperboard",
       colorClass: "bg-red-400",
       textClass: "text-teal-600",
@@ -106,10 +100,9 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-teal-500 hover:text-white",
     },
     {
-      id: 7,
-      name: "Lab Multimedia 2",
-      description:
-        "Laboratorium untuk praktikum desain grafis, editing multimedia, dan produksi konten digital.",
+      id: 12,
+      name: "Lab Multi Media 2",
+      description: "Laboratorium untuk praktikum desain grafis, editing multimedia, dan produksi konten digital.",
       icon: "Clapperboard",
       colorClass: "bg-red-400",
       textClass: "text-teal-600",
@@ -117,10 +110,9 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-teal-500 hover:text-white",
     },
     {
-      id: 8,
+      id: 13,
       name: "Lab Programming",
-      description:
-        "Laboratorium untuk praktikum pemrograman, pengembangan aplikasi, dan rekayasa perangkat lunak.",
+      description: "Laboratorium untuk praktikum pemrograman, pengembangan aplikasi, dan rekayasa perangkat lunak.",
       icon: "code",
       colorClass: "bg-blue-900",
       textClass: "text-teal-600",
@@ -128,10 +120,9 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-teal-500 hover:text-white",
     },
     {
-      id: 9,
+      id: 14,
       name: "Lab Sistem Digital",
-      description:
-        "Laboratorium untuk praktikum sistem digital, logika komputer, dan perancangan perangkat elektronik.",
+      description: "Laboratorium untuk praktikum sistem digital, logika komputer, dan perancangan perangkat elektronik.",
       icon: "ChartNoAxesColumn",
       colorClass: "bg-lime-500",
       textClass: "text-teal-600",
@@ -139,10 +130,9 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-teal-500 hover:text-white",
     },
     {
-      id: 10,
+      id: 15,
       name: "Lab Sistem Informasi",
-      description:
-        "Laboratorium untuk praktikum analisis sistem, pengelolaan data, dan pengembangan sistem informasi.",
+      description: "Laboratorium untuk praktikum analisis sistem, pengelolaan data, dan pengembangan sistem informasi.",
       icon: "ChartBar",
       colorClass: "bg-slate-500",
       textClass: "text-teal-600",
@@ -150,10 +140,9 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-teal-500 hover:text-white",
     },
     {
-      id: 11,
-      name: "Ruang ELC 1",
-      description:
-        "Ruang untuk kegiatan pembelajaran, pelatihan, dan pengembangan kompetensi mahasiswa.",
+      id: 16,
+      name: "Ruang ELC",
+      description: "Ruang untuk kegiatan pembelajaran, pelatihan, dan pengembangan kompetensi mahasiswa.",
       icon: "SquareLibrary",
       colorClass: "bg-amber-400",
       textClass: "text-teal-600",
@@ -161,21 +150,9 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-teal-500 hover:text-white",
     },
     {
-      id: 12,
-      name: "Ruang ELC 2",
-      description:
-        "Ruang untuk kegiatan pembelajaran, pelatihan, dan pengembangan kompetensi mahasiswa.",
-      icon: "SquareLibrary",
-      colorClass: "bg-amber-400",
-      textClass: "text-teal-600",
-      borderClass: "border-teal-500/20 hover:border-teal-500",
-      hoverBtnClass: "hover:bg-teal-500 hover:text-white",
-    },
-    {
-      id: 13,
+      id: 17,
       name: "Ruang Podcast",
-      description:
-        "Ruang untuk kegiatan rekaman audio, podcast, dan produksi konten digital.",
+      description: "Ruang untuk kegiatan rekaman audio, podcast, dan produksi konten digital.",
       icon: "Podcast",
       colorClass: "bg-red-400",
       textClass: "text-teal-600",
@@ -183,10 +160,9 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-teal-500 hover:text-white",
     },
     {
-      id: 14,
-      name: "Ruang Riset",
-      description:
-        "Ruang untuk kegiatan penelitian, diskusi akademik, dan pengembangan inovasi.",
+      id: 18,
+      name: "Ruang Riset Sistem Operasi",
+      description: "Ruang untuk kegiatan penelitian, diskusi akademik, dan pengembangan inovasi sistem operasi.",
       icon: "BookOpenText",
       colorClass: "bg-teal-500",
       textClass: "text-teal-600",
@@ -194,16 +170,15 @@ export default function LaboratoryGrid() {
       hoverBtnClass: "hover:bg-teal-500 hover:text-white",
     },
     {
-      id: 15,
-      name: "Ruang Operasi",
-      description:
-        "Ruang untuk kegiatan operasional, monitoring sistem, dan koordinasi laboratorium.",
-      icon: "Syringe",
-      colorClass: "bg-emerald-400",
-      textClass: "text-teal-600",
-      borderClass: "border-teal-500/20 hover:border-teal-500",
-      hoverBtnClass: "hover:bg-teal-500 hover:text-white",
-    },
+      id: 19,
+      name: "Lab Komputasi",
+      description: "Laboratorium untuk praktikum komputasi, pemodelan matematika, dan simulasi numerik.",
+      icon: "server",
+      colorClass: "bg-indigo-600",
+      textClass: "text-indigo-600",
+      borderClass: "border-indigo-500/20 hover:border-indigo-500",
+      hoverBtnClass: "hover:bg-indigo-600 hover:text-white",
+    }
   ];
 
   const handleSelectLaboratory = (lab) => {

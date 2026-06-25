@@ -3,6 +3,7 @@ import { Menu, Calendar, ShieldCheck, Lock, LogOut } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
 import { Link } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
+import Swal from "sweetalert2";
 
 /**
  * Navbar — Top navigation bar with date/time display and Admin access.
@@ -96,8 +97,18 @@ export default function Navbar() {
               <span className="sm:hidden">Admin</span>
             </Link>
             <button
-              onClick={() => {
-                if (confirm("Apakah Anda yakin ingin keluar dari sesi admin?")) {
+              onClick={async () => {
+                const confirmation = await Swal.fire({
+                  title: "Keluar Sesi Admin?",
+                  text: "Apakah Anda yakin ingin keluar dari sesi admin?",
+                  icon: "question",
+                  showCancelButton: true,
+                  confirmButtonText: "Ya, Keluar",
+                  cancelButtonText: "Batal",
+                  confirmButtonColor: "#EF4444",
+                  cancelButtonColor: "#64748B"
+                });
+                if (confirmation.isConfirmed) {
                   setAdminAuthenticated(false);
                 }
               }}

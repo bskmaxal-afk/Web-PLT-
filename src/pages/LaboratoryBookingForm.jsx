@@ -2,6 +2,7 @@ import { useState, useContext, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { submitBooking } from "../services/bookingService";
+import Swal from "sweetalert2";
 
 const parseScheduleTimes = (tanggalInput, jam) => {
   if (!tanggalInput) return { start: null, end: null };
@@ -206,7 +207,12 @@ export default function LaboratoryBookingForm() {
           s.status !== "ditolak"
       );
       if (isAlreadyBooked) {
-        alert("Maaf, ruangan untuk jadwal ini sudah dipesan oleh mahasiswa lain. Silakan pilih jadwal lain.");
+        Swal.fire({
+          icon: "warning",
+          title: "Jadwal Sudah Dipesan",
+          text: "Maaf, ruangan untuk jadwal ini sudah dipesan oleh mahasiswa lain. Silakan pilih jadwal lain.",
+          confirmButtonColor: "#3b82f6"
+        });
         return;
       }
     }
@@ -227,15 +233,28 @@ export default function LaboratoryBookingForm() {
 
       if (result.success) {
         setSelectedLaboratory(null);
-        alert(
-          `Pemesanan ${selectedSchedule?.ruang} berhasil dikirim!\nStatus: Dipesan.`
-        );
+        await Swal.fire({
+          icon: "success",
+          title: "Pemesanan Berhasil",
+          text: `Pemesanan ${selectedSchedule?.ruang} berhasil dikirim!\nStatus: Dipesan.`,
+          confirmButtonColor: "#3b82f6"
+        });
         navigate("/dashboard");
       } else {
-        alert(`Gagal mengirim pemesanan: ${result.message}`);
+        Swal.fire({
+          icon: "error",
+          title: "Gagal Mengirim",
+          text: `Gagal mengirim pemesanan: ${result.message}`,
+          confirmButtonColor: "#3b82f6"
+        });
       }
     } catch (err) {
-      alert("Gagal menghubungi server. Periksa koneksi Anda.");
+      Swal.fire({
+        icon: "error",
+        title: "Koneksi Bermasalah",
+        text: "Gagal menghubungi server. Periksa koneksi Anda.",
+        confirmButtonColor: "#3b82f6"
+      });
     } finally {
       setIsSubmitting(false);
     }
