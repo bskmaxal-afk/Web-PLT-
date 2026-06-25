@@ -79,7 +79,7 @@ export default function Navbar() {
         {/* Separator */}
         <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
 
-     
+      
 
         {/* Separator */}
         <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
