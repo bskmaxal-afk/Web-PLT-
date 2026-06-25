@@ -149,6 +149,19 @@ export default function LaboratoryBookingForm() {
 
     if (!selectedScheduleId) {
       newErrors.schedule = "Silakan pilih jadwal kuliah yang tersedia terlebih dahulu.";
+    } else {
+      const scheduleBackendId = selectedSchedule?._backendId || selectedSchedule?.id;
+      if (scheduleBackendId) {
+        const isAlreadyBooked = mySchedules.some(
+          (s) =>
+            s._type === "logbook" &&
+            parseInt(s._scheduleId, 10) === parseInt(scheduleBackendId, 10) &&
+            s.status !== "ditolak"
+        );
+        if (isAlreadyBooked) {
+          newErrors.schedule = "Maaf, ruangan untuk jadwal ini sudah dipesan oleh mahasiswa lain.";
+        }
+      }
     }
     if (!formData.mahasiswa.trim()) {
       newErrors.mahasiswa = "Nama mahasiswa wajib diisi.";
@@ -182,14 +195,27 @@ export default function LaboratoryBookingForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check if this schedule is already booked right before validation to alert user
+    const scheduleBackendId = selectedSchedule?._backendId || selectedSchedule?.id;
+    if (scheduleBackendId) {
+      const isAlreadyBooked = mySchedules.some(
+        (s) =>
+          s._type === "logbook" &&
+          parseInt(s._scheduleId, 10) === parseInt(scheduleBackendId, 10) &&
+          s.status !== "ditolak"
+      );
+      if (isAlreadyBooked) {
+        alert("Maaf, ruangan untuk jadwal ini sudah dipesan oleh mahasiswa lain. Silakan pilih jadwal lain.");
+        return;
+      }
+    }
+
     if (!validate()) return;
 
     setIsSubmitting(true);
 
     try {
-      // Ambil backend ID dari jadwal yang dipilih
-      const scheduleBackendId = selectedSchedule?._backendId || selectedSchedule?.id;
-
       const result = await submitBooking({
         scheduleId: scheduleBackendId,
         namaKetua: formData.mahasiswa.trim(),

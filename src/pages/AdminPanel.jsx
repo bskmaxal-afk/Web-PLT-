@@ -477,7 +477,11 @@ export default function AdminPanel() {
     
     const matchesHari = filterHari ? log.hari === filterHari : true;
     const matchesProdi = filterProdi ? log.prodi === filterProdi : true;
-    const matchesStatus = filterStatus ? log.status === filterStatus : true;
+    const matchesStatus = filterStatus 
+      ? (filterStatus === "dipesan" 
+          ? (log.status === "dipesan" || log.status === "diterima") 
+          : log.status === filterStatus) 
+      : true;
 
     return matchesSearch && matchesHari && matchesProdi && matchesStatus;
   }).sort((a, b) => {
@@ -538,7 +542,7 @@ export default function AdminPanel() {
     // 3. Filter Status Keterisian
     let matchesStatus = true;
     if (reportStatus === "dipesan") {
-      matchesStatus = log.status === "dipesan";
+      matchesStatus = log.status === "dipesan" || log.status === "diterima";
     } else if (reportStatus === "selesai") {
       matchesStatus = log.status === "selesai";
     } else if (reportStatus === "kosong") {
@@ -1412,7 +1416,7 @@ export default function AdminPanel() {
                 <div>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Dipesan (Ada Kegiatan)</p>
                   <h3 className="text-lg font-bold text-slate-800 font-display mt-0.5">
-                    {mySchedules.filter(s => s.status === "dipesan").length}
+                    {mySchedules.filter(s => s.status === "dipesan" || s.status === "diterima").length}
                   </h3>
                 </div>
               </div>
@@ -1599,6 +1603,14 @@ export default function AdminPanel() {
                             ) : log.status === "dipesan" ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-[10px] font-bold">
                                 <AlertCircle size={11} /> Dipesan (Ada Kegiatan)
+                              </span>
+                            ) : log.status === "diterima" ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-[10px] font-bold">
+                                <CheckCircle size={11} /> Diterima (Disetujui)
+                              </span>
+                            ) : log.status === "ditolak" ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 border border-red-200 text-red-700 rounded-full text-[10px] font-bold">
+                                <XCircle size={11} /> Ditolak
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-[10px] font-bold">

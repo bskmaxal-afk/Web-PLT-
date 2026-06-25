@@ -157,10 +157,11 @@ const isScheduleFinished = (tanggalInput, jam) => {
 const mapBackendLogbook = (item, schedules = []) => {
   // Ambil schedule ID dari data logbook
   const scheduleId = item.schadule || item.schedule || item.schadule_id || item.schedule_id || null;
+  const parsedScheduleId = scheduleId ? parseInt(scheduleId, 10) : null;
 
   // Cari schedule yang cocok dari schedules array
-  const matchedSchedule = (schedules && scheduleId)
-    ? schedules.find(s => s.id === scheduleId || s._backendId === scheduleId)
+  const matchedSchedule = (schedules && parsedScheduleId)
+    ? schedules.find(s => parseInt(s.id, 10) === parsedScheduleId || parseInt(s._backendId, 10) === parsedScheduleId)
     : null;
 
   // Prioritaskan objek schedule hasil lookup (sudah dimap), atau nested object di item, atau matchedSchedule
@@ -188,7 +189,7 @@ const mapBackendLogbook = (item, schedules = []) => {
     }
   }
 
-  // Ambil jam
+  // Jam
   const jamMulai = item.jammulai || item.jammulainya || item.jam_mulai || 
                     (!isAlreadyMapped ? (sched.jam_mulai || sched.jammulai || sched.jamMulai || "") : "");
   const jamSelesai = item.jamselesai || item.jamselesainya || item.jam_selesai || 
@@ -247,7 +248,7 @@ const mapBackendLogbook = (item, schedules = []) => {
   return {
     id: item.id,
     _backendId: item.id,
-    _scheduleId: scheduleId || sched.id || sched._backendId || null,
+    _scheduleId: parsedScheduleId || (sched.id ? parseInt(sched.id, 10) : null) || (sched._backendId ? parseInt(sched._backendId, 10) : null),
     _type: "logbook",
     hari: hari || "Senin",
     jam,
@@ -261,7 +262,7 @@ const mapBackendLogbook = (item, schedules = []) => {
     nim: item.nim || "-",
     numberwa: item.no_wa || item.noWa || item.nomorWa || item.nomor_wa || item.numberwa || "-",
     jumlahHadir: parseInt(item.jumlah_hadir || item.jumlahHadir || item.jumlahPeserta || item.jumlah_peserta || 0, 10),
-    status: isScheduleFinished(isoTanggal, jam) ? "selesai" : "dipesan",
+    status: isScheduleFinished(isoTanggal, jam) ? "selesai" : (item.status || "dipesan"),
   };
 };
 
@@ -379,9 +380,10 @@ export const AppProvider = ({ children }) => {
     const logbooks = rawLogbooks.map(item => mapBackendLogbook(item, schedules));
 
     // Gabungkan: logbook entries menimpa jadwal yang sudah di-booking.
+    // Logbook yang ditolak (status = "ditolak") tidak memblokir jadwal, sehingga jadwal tersebut bisa dipesan kembali.
     const bookedScheduleIds = new Set(
       logbooks
-        .filter(lb => !isScheduleFinished(lb.tanggalInput, lb.jam))
+        .filter(lb => lb.status !== "ditolak" && !isScheduleFinished(lb.tanggalInput, lb.jam))
         .map(lb => lb._scheduleId)
         .filter(lbId => lbId !== null && lbId !== undefined)
     );
