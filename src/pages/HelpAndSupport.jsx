@@ -1,5 +1,6 @@
 import { useState } from "react";
 import API from "../services/api";
+import Swal from "sweetalert2";
 
 /**
  * HelpAndSupport — Contact information and support message form.
@@ -13,7 +14,12 @@ export default function HelpAndSupport() {
   const handleSubmitMessage = async (e) => {
     e.preventDefault();
     if (!name.trim() || !message.trim()) {
-      alert("Nama/NIM dan pesan wajib diisi!");
+      Swal.fire({
+        icon: "warning",
+        title: "Validasi Gagal",
+        text: "Nama/NIM dan pesan wajib diisi!",
+        confirmButtonColor: "#3b82f6"
+      });
       return;
     }
 
@@ -29,12 +35,22 @@ export default function HelpAndSupport() {
         setStatus("success");
       } else {
         setStatus("idle");
-        alert("Gagal mengirim pengaduan. Silakan coba lagi.");
+        Swal.fire({
+          icon: "error",
+          title: "Gagal Kirim",
+          text: "Gagal mengirim pengaduan. Silakan coba lagi.",
+          confirmButtonColor: "#3b82f6"
+        });
       }
     } catch (error) {
       setStatus("idle");
       const errMsg = error.response?.data?.message || "Gagal mengirim pengaduan. Periksa koneksi Anda.";
-      alert(errMsg);
+      Swal.fire({
+        icon: "error",
+        title: "Terjadi Kesalahan",
+        text: errMsg,
+        confirmButtonColor: "#3b82f6"
+      });
     }
   };
 

@@ -1,6 +1,7 @@
 import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Calendar, Search, Trash2, ChevronDown, ChevronUp, Users, Info } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export default function MySchedule() {
   const { mySchedules, setMySchedules } = useContext(AppContext);
@@ -8,10 +9,26 @@ export default function MySchedule() {
   const [activeTab, setActiveTab] = useState('Semua'); // 'Semua', 'Disetujui', 'Pending'
   const [expandedId, setExpandedId] = useState(null);
 
-  const handleCancel = (id, ruang) => {
-    const isConfirmed = window.confirm(`Apakah Anda yakin ingin membatalkan pemesanan untuk ${ruang}?`);
-    if (isConfirmed) {
+  const handleCancel = async (id, ruang) => {
+    const confirmation = await Swal.fire({
+      title: "Batalkan Pemesanan?",
+      text: `Apakah Anda yakin ingin membatalkan pemesanan untuk ${ruang}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Batalkan",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b"
+    });
+
+    if (confirmation.isConfirmed) {
       setMySchedules(mySchedules.filter(item => item.id !== id));
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil Dibatalkan",
+        text: "Pemesanan berhasil dibatalkan.",
+        confirmButtonColor: "#3b82f6"
+      });
     }
   };
 

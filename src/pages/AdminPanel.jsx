@@ -11,9 +11,9 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { loginAdmin, logoutAdmin } from "../services/authService";
 import { createSchedule } from "../services/scheduleService";
-import { deleteEntry, deleteLogbook } from "../services/historyService";
+import { deleteEntry, deleteLogbookEntry, clearAllLogbooks, clearAllSchedules } from "../services/historyService";
 import { updateBookingStatus } from "../services/bookingService";
-
+import Swal from "sweetalert2"
 export default function AdminPanel() {
   const { 
     isAdminAuthenticated, 
@@ -52,11 +52,11 @@ export default function AdminPanel() {
   const [inputKelas, setInputKelas] = useState("");
   const [inputKeterangan, setInputKeterangan] = useState("");
 
-  // Helper to check if lab is locked (Podcast, ELC 1 & 2, Riset)
+  // Helper to check if lab is locked (Podcast, ELC, Riset)
   const isLockedLab = (labName) => {
     if (!labName) return false;
     const nameLower = labName.toLowerCase();
-    return nameLower.includes("podcast") || nameLower.includes("elc 1") || nameLower.includes("elc 2") || nameLower.includes("riset");
+    return nameLower.includes("podcast") || nameLower.includes("elc") || nameLower.includes("riset");
   };
 
   // Helper to get today's date in local time YYYY-MM-DD
@@ -202,14 +202,22 @@ export default function AdminPanel() {
       finalMatkul = inputKeterangan.trim();
     }
 
-    if (!inputLab || !finalProdi || !inputKelas || !finalMatkul || !inputDosen || !inputTanggal || !inputJamMulai || !inputJamSelesai) {
-      alert("Semua field wajib diisi!");
-      return;
-    }
+   if (!inputLab || !finalProdi || !inputKelas || !finalMatkul || !inputDosen || !inputTanggal || !inputJamMulai || !inputJamSelesai) {
+  Swal.fire({
+    icon: "warning",
+    title: "Form Belum Lengkap",
+    text: "Semua field wajib diisi!",
+  });
+  return;
+}
 
     const todayStr = getTodayDateString();
     if (inputTanggal < todayStr) {
-      alert("Tanggal pelaksanaan tidak boleh sebelum hari ini!");
+      Swal.fire({
+        icon: "error",
+        title: "Tanggal Tidak Valid",
+        text: "Tanggal pelaksanaan tidak boleh sebelum hari ini!",
+      });
       return;
     }
 
@@ -227,33 +235,59 @@ export default function AdminPanel() {
         jamMulai: inputJamMulai,
         jamSelesai: inputJamSelesai,
       });
+if (result.success) {
+  await Swal.fire({
+    icon: "success",
+    title: "Berhasil",
+    text: "Jadwal Kuliah berhasil dibuat!",
+  });
 
-      if (result.success) {
-        alert("Jadwal Kuliah berhasil dibuat!");
-        // Reset form states
-        setInputLab("");
-        setInputProdi("");
-        setInputKelas("");
-        setInputMatkul("");
-        setInputDosen("");
-        setInputTanggal("");
-        setInputJamMulai("");
-        setInputJamSelesai("");
-        setInputKeterangan("");
-        // Refresh data dari backend
-        await refreshData();
-        setActiveTab("data-penggunaan");
-      } else {
-        alert(`Gagal membuat jadwal: ${result.message}`);
-      }
-    } catch (err) {
-      alert("Gagal menghubungi server. Periksa koneksi Anda.");
-    }
+  // Reset form states
+  setInputLab("");
+  setInputProdi("");
+  setInputKelas("");
+  setInputMatkul("");
+  setInputDosen("");
+  setInputTanggal("");
+  setInputJamMulai("");
+  setInputJamSelesai("");
+  setInputKeterangan("");
+
+  // Refresh data dari backend
+  await refreshData();
+  setActiveTab("data-penggunaan");
+} else {
+  Swal.fire({
+    icon: "error",
+    title: "Gagal",
+    text: `Gagal membuat jadwal: ${result.message}`,
+  });
+}
+    } 
+    catch (err) {
+  Swal.fire({
+    icon: "error",
+    title: "Koneksi Bermasalah",
+    text: "Gagal menghubungi server. Periksa koneksi Anda.",
+  });
+}
+    
   };
 
   // Handle Logout — clear token dari localStorage
-  const handleLogout = () => {
-    if (confirm("Apakah Anda yakin ingin keluar dari Panel Admin?")) {
+  const handleLogout = async () => {
+    const confirmation = await Swal.fire({
+      title: "Keluar Sesi Admin?",
+      text: "Apakah Anda yakin ingin keluar dari Panel Admin?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Keluar",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#3b82f6",
+      cancelButtonColor: "#64748b"
+    });
+
+    if (confirmation.isConfirmed) {
       logoutAdmin();
       setAdminAuthenticated(false);
       setMySchedules([]);
@@ -262,64 +296,204 @@ export default function AdminPanel() {
   };
 
   // Delete Log via backend API
-  const handleDeleteLog = async (id) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus data log ini?")) return;
+ const handleDeleteLog = async (id) => {
+  const confirmation = await Swal.fire({
+    title: "Hapus Data?",
+    text: "Data yang dihapus tidak dapat dikembalikan.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Ya, Hapus",
+    cancelButtonText: "Batal",
+  });
 
-    // Cari item untuk menentukan apakah ini logbook atau jadwal
-    const item = mySchedules.find(s => s.id === id);
-    if (item && item._backendId) {
-      try {
-        const result = item._type === "logbook"
-          ? await deleteLogbook(item._backendId)
-          : await deleteEntry(item._backendId);
+  if (!confirmation.isConfirmed) return;
 
-        if (result.success) {
-          alert("Data berhasil dihapus.");
-          await refreshData();
-        } else {
-          alert(`Gagal menghapus: ${result.message}`);
-        }
-      } catch (err) {
-        alert("Gagal menghubungi server. Periksa koneksi Anda.");
+  const item = mySchedules.find((s) => s.id === id);
+
+  if (item && item._backendId) {
+    try {
+      // Jika statusnya dipesan / bertipe logbook, hapus menggunakan endpoint /delete/logbook/:id
+      const result = (item._type === "logbook" || item.status === "dipesan")
+        ? await deleteLogbookEntry(item._backendId)
+        : await deleteEntry(item._backendId);
+
+      if (result.success) {
+        await Swal.fire({
+          icon: "success",
+          title: "Berhasil",
+          text: "Data berhasil dihapus.",
+        });
+
+        await refreshData();
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Gagal",
+          text: `Gagal menghapus: ${result.message}`,
+        });
       }
-    } else {
-      // Fallback: hapus dari state lokal saja jika tidak memiliki backend ID
-      setMySchedules(mySchedules.filter(s => s.id !== id));
-      alert("Data berhasil dihapus.");
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Koneksi Bermasalah",
+        text: "Gagal menghubungi server. Periksa koneksi Anda.",
+      });
+    }
+  } else {
+    setMySchedules(mySchedules.filter((s) => s.id !== id));
+
+    Swal.fire({
+      icon: "success",
+      title: "Berhasil",
+      text: "Data berhasil dihapus.",
+    });
+  }
+};
+
+  // Clear all data (Logbook & Jadwal) via backend API
+  const handleClearAllData = async () => {
+    // Pop-up 1: "apakah kamu yakin ?"
+    const confirmation1 = await Swal.fire({
+      title: "Apakah kamu yakin?",
+      text: "Tindakan ini akan mengosongkan/menghapus seluruh data logbook dan jadwal perkuliahan!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Lanjutkan",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b",
+    });
+
+    if (!confirmation1.isConfirmed) return;
+
+    // Pop-up 2: "jika yakin silakan input 'DELETE' untuk menghapus"
+    const confirmation2 = await Swal.fire({
+      title: "Konfirmasi Penghapusan",
+      text: 'Jika yakin, silakan input "DELETE" untuk menghapus seluruh data:',
+      input: "text",
+      inputPlaceholder: "DELETE",
+      showCancelButton: true,
+      confirmButtonText: "Hapus Semua",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b",
+      inputValidator: (value) => {
+        if (value !== "DELETE") {
+          return 'Anda harus mengetik "DELETE" (dengan huruf kapital)!';
+        }
+      }
+    });
+
+    if (!confirmation2.isConfirmed || confirmation2.value !== "DELETE") return;
+
+    // Call both endpoints
+    try {
+      Swal.fire({
+        title: "Sedang menghapus...",
+        text: "Mohon tunggu sebentar.",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const [logbookRes, scheduleRes] = await Promise.all([
+        clearAllLogbooks(),
+        clearAllSchedules(),
+      ]);
+
+      if (logbookRes.success && scheduleRes.success) {
+        await Swal.fire({
+          icon: "success",
+          title: "Berhasil",
+          text: "Seluruh data logbook dan jadwal berhasil dikosongkan.",
+          confirmButtonColor: "#3b82f6"
+        });
+        await refreshData();
+      } else {
+        const errorMsg = [
+          !logbookRes.success && `Logbook: ${logbookRes.message}`,
+          !scheduleRes.success && `Jadwal: ${scheduleRes.message}`,
+        ].filter(Boolean).join(" | ");
+
+        Swal.fire({
+          icon: "error",
+          title: "Sebagian atau Seluruh Data Gagal Dihapus",
+          text: errorMsg,
+          confirmButtonColor: "#3b82f6"
+        });
+      }
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Koneksi Bermasalah",
+        text: "Gagal menghubungi server. Periksa koneksi Anda.",
+        confirmButtonColor: "#3b82f6"
+      });
     }
   };
 
   // Approve booking (Terima) - adds notification to student
   const handleApprove = async (log) => {
-    const result = await updateBookingStatus(log.id, "diterima");
-    if (!result.success) {
-      alert(`Gagal menyetujui pemesanan: ${result.message}`);
-      return;
-    }
+  const result = await updateBookingStatus(log.id, "diterima");
 
-    setMySchedules(mySchedules.map(s =>
-      s.id === log.id ? { ...s, status: "diterima" } : s
-    ));
-    addNotification({
-      type: "diterima",
-      title: "Pemesanan Laboratorium Diterima! ✅",
-      message: `Halo ${log.mahasiswa || "Mahasiswa"}! Pemesanan ${log.ruang} untuk mata kuliah "${log.matkul}" pada ${log.hari}, ${log.jam} telah DITERIMA oleh admin. Selamat menggunakan laboratorium!`,
-      mahasiswa: log.mahasiswa,
-      nim: log.nim,
-      ruang: log.ruang,
-      matkul: log.matkul,
-      hari: log.hari,
-      jam: log.jam,
+  if (!result.success) {
+    Swal.fire({
+      icon: "error",
+      title: "Gagal",
+      text: `Gagal menyetujui pemesanan: ${result.message}`,
     });
-    alert(`✅ Pemesanan ${log.mahasiswa || "mahasiswa"} berhasil DITERIMA. Notifikasi telah dikirim.`);
-  };
+    return;
+  }
 
+  setMySchedules(
+    mySchedules.map((s) =>
+      s.id === log.id ? { ...s, status: "diterima" } : s
+    )
+  );
+
+  addNotification({
+    type: "diterima",
+    title: "Pemesanan Laboratorium Diterima! ✅",
+    message: `Halo ${log.mahasiswa || "Mahasiswa"}! Pemesanan ${log.ruang} untuk mata kuliah "${log.matkul}" pada ${log.hari}, ${log.jam} telah DITERIMA oleh admin. Selamat menggunakan laboratorium!`,
+    mahasiswa: log.mahasiswa,
+    nim: log.nim,
+    ruang: log.ruang,
+    matkul: log.matkul,
+    hari: log.hari,
+    jam: log.jam,
+  });
+
+  Swal.fire({
+    icon: "success",
+    title: "Pemesanan Disetujui",
+    text: `Pemesanan ${log.mahasiswa || "mahasiswa"} berhasil diterima. Notifikasi telah dikirim.`,
+    confirmButtonText: "OK",
+  });
+};
   // Reject booking (Tolak) - adds notification to student
   const handleReject = async (log) => {
-    const alasan = prompt(`Masukkan alasan penolakan untuk ${log.mahasiswa || "mahasiswa"} (opsional):`) ?? "";
+    const { value: alasan, isDismissed } = await Swal.fire({
+      title: "Alasan Penolakan",
+      text: `Masukkan alasan penolakan untuk ${log.mahasiswa || "mahasiswa"} (opsional):`,
+      input: "text",
+      inputPlaceholder: "Masukkan alasan penolakan...",
+      showCancelButton: true,
+      confirmButtonText: "Tolak",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b"
+    });
+
+    if (isDismissed) return;
+
     const result = await updateBookingStatus(log.id, "ditolak");
     if (!result.success) {
-      alert(`Gagal menolak pemesanan: ${result.message}`);
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Menolak",
+        text: `Gagal menolak pemesanan: ${result.message}`
+      });
       return;
     }
 
@@ -338,7 +512,13 @@ export default function AdminPanel() {
       jam: log.jam,
       alasan: alasan || "",
     });
-    alert(`❌ Pemesanan ${log.mahasiswa || "mahasiswa"} berhasil DITOLAK. Notifikasi telah dikirim.`);
+    Swal.fire({
+      icon: "success",
+      title: "Pemesanan Ditolak",
+      text: `Pemesanan ${log.mahasiswa || "mahasiswa"} berhasil DITOLAK. Notifikasi telah dikirim.`,
+      confirmButtonText: "OK",
+      confirmButtonColor: "#3b82f6"
+    });
   };
 
   // Open Edit Modal
@@ -361,103 +541,179 @@ export default function AdminPanel() {
   };
 
   // Handle Save Edit
-  const handleSaveEdit = (e) => {
-    e.preventDefault();
-    const parsedHadir = parseInt(editFormData.jumlahHadir, 10) || 0;
-    if (parsedHadir > 36) {
-      alert("Jumlah hadir maksimal 36 orang.");
-      return;
-    }
-    setMySchedules(
-      mySchedules.map(log => log.id === editingLog.id ? { 
-        ...log, 
-        ...editFormData,
-        jumlahHadir: parsedHadir
-      } : log)
-    );
-    setEditingLog(null);
-    alert("Data berhasil diperbarui.");
-  };
+const handleSaveEdit = (e) => {
+  e.preventDefault();
+
+  const parsedHadir = parseInt(editFormData.jumlahHadir, 10) || 0;
+
+  if (parsedHadir > 36) {
+    Swal.fire({
+      icon: "warning",
+      title: "Jumlah Hadir Tidak Valid",
+      text: "Jumlah hadir maksimal 36 orang.",
+    });
+    return;
+  }
+
+  setMySchedules(
+    mySchedules.map((log) =>
+      log.id === editingLog.id
+        ? {
+            ...log,
+            ...editFormData,
+            jumlahHadir: parsedHadir,
+          }
+        : log
+    )
+  );
+
+  setEditingLog(null);
+
+  Swal.fire({
+    icon: "success",
+    title: "Berhasil",
+    text: "Data berhasil diperbarui.",
+  });
+};
 
   // Bulk Approve (Terima Terpilih)
   const handleBulkApprove = async () => {
     if (selectedLogIds.length === 0) return;
-    if (confirm(`Apakah Anda yakin ingin MENERIMA ${selectedLogIds.length} pemesanan terpilih?`)) {
-      const selectedLogs = mySchedules.filter(s => selectedLogIds.includes(s.id));
-      
-      const results = await Promise.all(selectedLogs.map(log => updateBookingStatus(log.id, "diterima")));
-      const failed = results.filter(r => !r.success);
-      if (failed.length > 0) {
-        alert(`Gagal memproses beberapa pemesanan (${failed.length} gagal).`);
-      }
+    
+    const confirmation = await Swal.fire({
+      title: "Setujui Pemesanan Terpilih?",
+      text: `Apakah Anda yakin ingin MENERIMA ${selectedLogIds.length} pemesanan terpilih?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Terima",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#10b981",
+      cancelButtonColor: "#64748b"
+    });
 
-      setMySchedules(mySchedules.map(s =>
-        selectedLogIds.includes(s.id) ? { ...s, status: "diterima" } : s
-      ));
+    if (!confirmation.isConfirmed) return;
 
-      selectedLogs.forEach(log => {
-        addNotification({
-          type: "diterima",
-          title: "Pemesanan Laboratorium Diterima! ✅",
-          message: `Halo ${log.mahasiswa || "Mahasiswa"}! Pemesanan ${log.ruang} untuk mata kuliah "${log.matkul}" pada ${log.hari}, ${log.jam} telah DITERIMA oleh admin. Selamat menggunakan laboratorium!`,
-          mahasiswa: log.mahasiswa,
-          nim: log.nim,
-          ruang: log.ruang,
-          matkul: log.matkul,
-          hari: log.hari,
-          jam: log.jam,
-        });
+    const selectedLogs = mySchedules.filter(s => selectedLogIds.includes(s.id));
+    
+    const results = await Promise.all(selectedLogs.map(log => updateBookingStatus(log.id, "diterima")));
+    const failed = results.filter(r => !r.success);
+    if (failed.length > 0) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal memproses beberapa pemesanan",
+        text: `Gagal memproses beberapa pemesanan (${failed.length} gagal).`
       });
-
-      setSelectedLogIds([]);
-      alert(`✅ Berhasil menerima ${selectedLogs.length - failed.length} pemesanan.`);
     }
+
+    setMySchedules(mySchedules.map(s =>
+      selectedLogIds.includes(s.id) ? { ...s, status: "diterima" } : s
+    ));
+
+    selectedLogs.forEach(log => {
+      addNotification({
+        type: "diterima",
+        title: "Pemesanan Laboratorium Diterima! ✅",
+        message: `Halo ${log.mahasiswa || "Mahasiswa"}! Pemesanan ${log.ruang} untuk mata kuliah "${log.matkul}" pada ${log.hari}, ${log.jam} telah DITERIMA oleh admin. Selamat menggunakan laboratorium!`,
+        mahasiswa: log.mahasiswa,
+        nim: log.nim,
+        ruang: log.ruang,
+        matkul: log.matkul,
+        hari: log.hari,
+        jam: log.jam,
+      });
+    });
+
+    setSelectedLogIds([]);
+    Swal.fire({
+      icon: "success",
+      title: "Berhasil",
+      text: `✅ Berhasil menerima ${selectedLogs.length - failed.length} pemesanan.`,
+      confirmButtonColor: "#3b82f6"
+    });
   };
 
   // Bulk Reject (Tolak Terpilih)
   const handleBulkReject = async () => {
     if (selectedLogIds.length === 0) return;
-    const alasan = prompt(`Masukkan alasan penolakan untuk ${selectedLogIds.length} pemesanan terpilih (opsional):`) ?? "";
-    if (confirm(`Apakah Anda yakin ingin MENOLAK ${selectedLogIds.length} pemesanan terpilih?`)) {
-      const selectedLogs = mySchedules.filter(s => selectedLogIds.includes(s.id));
 
-      const results = await Promise.all(selectedLogs.map(log => updateBookingStatus(log.id, "ditolak")));
-      const failed = results.filter(r => !r.success);
-      if (failed.length > 0) {
-        alert(`Gagal memproses penolakan beberapa pemesanan (${failed.length} gagal).`);
-      }
+    const { value: alasan, isDismissed } = await Swal.fire({
+      title: "Tolak Pemesanan Terpilih",
+      text: `Apakah Anda yakin ingin MENOLAK ${selectedLogIds.length} pemesanan terpilih? Masukkan alasan penolakan (opsional):`,
+      input: "text",
+      inputPlaceholder: "Masukkan alasan penolakan...",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Tolak",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b"
+    });
 
-      setMySchedules(mySchedules.map(s =>
-        selectedLogIds.includes(s.id) ? { ...s, status: "ditolak" } : s
-      ));
+    if (isDismissed) return;
 
-      selectedLogs.forEach(log => {
-        addNotification({
-          type: "ditolak",
-          title: "Pemesanan Laboratorium Ditolak ❌",
-          message: `Halo ${log.mahasiswa || "Mahasiswa"}! Mohon maaf, pemesanan ${log.ruang} untuk mata kuliah "${log.matkul}" pada ${log.hari}, ${log.jam} telah DITOLAK oleh admin.${alasan ? ` Alasan: ${alasan}` : ""} Silakan hubungi admin untuk informasi lebih lanjut.`,
-          mahasiswa: log.mahasiswa,
-          nim: log.nim,
-          ruang: log.ruang,
-          matkul: log.matkul,
-          hari: log.hari,
-          jam: log.jam,
-          alasan: alasan || "",
-        });
+    const selectedLogs = mySchedules.filter(s => selectedLogIds.includes(s.id));
+
+    const results = await Promise.all(selectedLogs.map(log => updateBookingStatus(log.id, "ditolak")));
+    const failed = results.filter(r => !r.success);
+    if (failed.length > 0) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: `Gagal memproses penolakan beberapa pemesanan (${failed.length} gagal).`
       });
-
-      setSelectedLogIds([]);
-      alert(`❌ Berhasil menolak ${selectedLogs.length - failed.length} pemesanan.`);
     }
+
+    setMySchedules(mySchedules.map(s =>
+      selectedLogIds.includes(s.id) ? { ...s, status: "ditolak" } : s
+    ));
+
+    selectedLogs.forEach(log => {
+      addNotification({
+        type: "ditolak",
+        title: "Pemesanan Laboratorium Ditolak ❌",
+        message: `Halo ${log.mahasiswa || "Mahasiswa"}! Mohon maaf, pemesanan ${log.ruang} untuk mata kuliah "${log.matkul}" pada ${log.hari}, ${log.jam} telah DITOLAK oleh admin.${alasan ? ` Alasan: ${alasan}` : ""} Silakan hubungi admin untuk informasi lebih lanjut.`,
+        mahasiswa: log.mahasiswa,
+        nim: log.nim,
+        ruang: log.ruang,
+        matkul: log.matkul,
+        hari: log.hari,
+        jam: log.jam,
+        alasan: alasan || "",
+      });
+    });
+
+    setSelectedLogIds([]);
+    Swal.fire({
+      icon: "success",
+      title: "Berhasil",
+      text: `❌ Berhasil menolak ${selectedLogs.length - failed.length} pemesanan.`,
+      confirmButtonColor: "#3b82f6"
+    });
   };
 
   // Bulk Delete (Hapus Terpilih)
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (selectedLogIds.length === 0) return;
-    if (confirm(`Apakah Anda yakin ingin MENGHAPUS ${selectedLogIds.length} log penggunaan terpilih?`)) {
+
+    const confirmation = await Swal.fire({
+      title: "Hapus Log Terpilih?",
+      text: `Apakah Anda yakin ingin MENGHAPUS ${selectedLogIds.length} log penggunaan terpilih?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b"
+    });
+
+    if (confirmation.isConfirmed) {
       setMySchedules(mySchedules.filter(s => !selectedLogIds.includes(s.id)));
       setSelectedLogIds([]);
-      alert("✅ Berhasil menghapus log terpilih.");
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil",
+        text: "✅ Berhasil menghapus log terpilih.",
+        confirmButtonColor: "#3b82f6"
+      });
     }
   };
 
@@ -568,7 +824,12 @@ export default function AdminPanel() {
   // Export Report to Excel (.xlsx) using SheetJS
   const exportExcel = () => {
     if (reportFilteredUsage.length === 0) {
-      alert("Tidak ada data untuk diekspor!");
+      Swal.fire({
+        icon: "warning",
+        title: "Gagal Ekspor",
+        text: "Tidak ada data untuk diekspor!",
+        confirmButtonColor: "#3b82f6"
+      });
       return;
     }
     const headers = ["Hari", "Jam", "Nama Dosen", "Prodi", "Kelas", "Mata Kuliah", "Laboratorium", "Tanggal Input", "Nama Mahasiswa", "NIM", "No WA", "Jumlah Hadir"];
@@ -615,7 +876,12 @@ export default function AdminPanel() {
   // Export Report to PDF using jsPDF and jspdf-autotable
   const exportPDF = () => {
     if (reportFilteredUsage.length === 0) {
-      alert("Tidak ada data untuk diekspor!");
+      Swal.fire({
+        icon: "warning",
+        title: "Gagal Ekspor",
+        text: "Tidak ada data untuk diekspor!",
+        confirmButtonColor: "#3b82f6"
+      });
       return;
     }
     
@@ -1028,14 +1294,29 @@ export default function AdminPanel() {
     let skippedCount = 0;
 
     if (duplicates.length > 0) {
-      const proceedSkip = window.confirm(
-        `Peringatan: Ditemukan ${duplicates.length} jadwal dari total ${importedSchedules.length} yang sudah terdaftar di sistem pada lab, tanggal, dan jam yang sama.\n\nApakah Anda ingin MELEWATI (skip) jadwal duplikat tersebut dan hanya mengimpor ${nonDuplicates.length} jadwal baru?\n\n- Klik [OK] untuk mengimpor jadwal baru saja.\n- Klik [Batal / Cancel] jika ingin tetap mengimpor semua jadwal termasuk duplikat.`
-      );
+      const confirmation = await Swal.fire({
+        title: "Jadwal Duplikat Ditemukan",
+        text: `Peringatan: Ditemukan ${duplicates.length} jadwal dari total ${importedSchedules.length} yang sudah terdaftar di sistem pada lab, tanggal, dan jam yang sama.\n\nApakah Anda ingin MELEWATI (skip) jadwal duplikat tersebut dan hanya mengimpor ${nonDuplicates.length} jadwal baru?\n\n- Klik "Lewati Duplikat" untuk mengimpor jadwal baru saja.\n- Klik "Impor Semua" jika ingin tetap mengimpor semua jadwal termasuk duplikat.`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Lewati Duplikat",
+        cancelButtonText: "Impor Semua",
+        confirmButtonColor: "#eab308",
+        cancelButtonColor: "#3b82f6"
+      });
+
+      const proceedSkip = confirmation.isConfirmed;
+
       if (proceedSkip) {
         schedulesToImport = nonDuplicates;
         skippedCount = duplicates.length;
         if (schedulesToImport.length === 0) {
-          alert("Semua jadwal yang Anda impor adalah duplikat dan telah dilewati. Tidak ada jadwal baru untuk disimpan.");
+          await Swal.fire({
+            icon: "info",
+            title: "Semua Jadwal Duplikat",
+            text: "Semua jadwal yang Anda impor adalah duplikat dan telah dilewati. Tidak ada jadwal baru untuk disimpan.",
+            confirmButtonColor: "#3b82f6"
+          });
           setImportedSchedules([]);
           setImportFileName("");
           return;
@@ -1084,7 +1365,13 @@ export default function AdminPanel() {
     let message = `${successCount} Jadwal berhasil diimpor.`;
     if (skippedCount > 0) message += ` ${skippedCount} jadwal duplikat dilewati.`;
     if (failCount > 0) message += ` ${failCount} gagal.`;
-    alert(message);
+    
+    await Swal.fire({
+      icon: failCount > 0 ? "warning" : "success",
+      title: "Hasil Impor",
+      text: message,
+      confirmButtonColor: "#3b82f6"
+    });
 
     setImportedSchedules([]);
     setImportFileName("");
@@ -1711,25 +1998,19 @@ export default function AdminPanel() {
                 </div>
                 <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
                   <button
-                    onClick={handleBulkApprove}
-                    className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition duration-200 cursor-pointer shadow-xs"
-                  >
-                    <CheckCircle size={14} />
-                    Terima Terpilih
-                  </button>
-                  <button
-                    onClick={handleBulkReject}
-                    className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition duration-200 cursor-pointer shadow-xs"
-                  >
-                    <XCircle size={14} />
-                    Tolak Terpilih
-                  </button>
-                  <button
                     onClick={handleBulkDelete}
                     className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition duration-200 cursor-pointer shadow-xs"
                   >
                     <Trash2 size={14} />
                     Hapus Terpilih
+                  </button>
+                  <button
+                    onClick={handleClearAllData}
+                    className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition duration-200 cursor-pointer shadow-xs"
+                    title="Kosongkan seluruh data logbook dan jadwal kuliah"
+                  >
+                    <Trash2 size={14} />
+                    Hapus Semua Data
                   </button>
                   <button
                     onClick={() => setSelectedLogIds([])}

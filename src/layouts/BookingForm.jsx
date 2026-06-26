@@ -1,7 +1,7 @@
 import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
-
+import Swal from "sweetalert2";
 export default function BookingForm() {
   const navigate = useNavigate();
   const { mySchedules, setMySchedules } = useContext(AppContext);
@@ -46,8 +46,13 @@ export default function BookingForm() {
     };
     
     setMySchedules([newSchedule, ...mySchedules]);
-    alert(`Permohonan booking ${formData.ruang} berhasil dikirim!`);
-    navigate('/schedule');
+    Swal.fire({
+  icon: 'success',
+  title: 'Berhasil',
+  text: `Permohonan booking ${formData.ruang} berhasil dikirim!`,
+}).then(() => {
+  navigate('/schedule');
+});
   };
 
   return (

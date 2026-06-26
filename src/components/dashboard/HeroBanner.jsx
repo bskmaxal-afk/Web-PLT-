@@ -1,6 +1,7 @@
 import { Share2, DoorOpen, Users, ThumbsUp } from "lucide-react";
 import heroImg from "../../assets/hero.png";
 import logoUIN from "../../assets/logoUIN.jpg";
+import Swal from "sweetalert2"; 
 
 export default function HeroBanner() {
   const handleShare = () => {
@@ -12,7 +13,14 @@ export default function HeroBanner() {
       }).catch(console.error);
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert('Tautan disalin ke papan klip!');
+
+Swal.fire({
+  icon: 'success',
+  title: 'Berhasil',
+  text: 'Tautan disalin ke papan klip!',
+  timer: 2000,
+  showConfirmButton: false,
+});
     }
   };
 

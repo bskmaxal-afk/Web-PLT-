@@ -21,20 +21,16 @@ export const deleteEntry = async (id) => {
 };
 
 /**
- * Hapus entri logbook berdasarkan ID.
- * DELETE /delete/logbook/:id (Public/Admin)
+ * Hapus entri logbook berdasarkan ID (anak saja, parent schedule dipertahankan).
+ * DELETE /delete/logbook/:id
  *
  * @param {string|number} id — ID logbook yang akan dihapus
  * @returns {Promise<{ success: boolean, message?: string }>}
  */
-export const deleteLogbook = async (id) => {
+export const deleteLogbookEntry = async (id) => {
   try {
-    const response = await API.delete(`/delete/logbook/${id}`);
-    // Check if response contains affectedRows or custom status
-    if (response.data && (response.data.status === 200 || response.data.message?.affectedRows > 0)) {
-      return { success: true };
-    }
-    return { success: true, data: response.data };
+    await API.delete(`/delete/logbook/${id}`);
+    return { success: true };
   } catch (error) {
     const message =
       error.response?.data?.message ||
@@ -43,3 +39,43 @@ export const deleteLogbook = async (id) => {
     return { success: false, message };
   }
 };
+
+/**
+ * Hapus semua data logbook.
+ * DELETE /delete/logbook/clear
+ *
+ * @returns {Promise<{ success: boolean, message?: string }>}
+ */
+export const clearAllLogbooks = async () => {
+  try {
+    await API.delete("/delete/logbook/clear");
+    return { success: true };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Gagal menghapus semua data logbook.";
+    return { success: false, message };
+  }
+};
+
+/**
+ * Hapus semua data jadwal.
+ * DELETE /delete/jadwal/clear
+ *
+ * @returns {Promise<{ success: boolean, message?: string }>}
+ */
+export const clearAllSchedules = async () => {
+  try {
+    await API.delete("/delete/jadwal/clear");
+    return { success: true };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Gagal menghapus semua data jadwal.";
+    return { success: false, message };
+  }
+};
+
+

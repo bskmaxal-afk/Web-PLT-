@@ -13,8 +13,8 @@
  * Untuk menambah / mengubah daftar mata kuliah, cukup edit file ini.
  */
 export const laboratoryCourses = {
-  // ── Lab Aplikasi 1 (id: 1) ──────────────────────────────────
-  1: [
+  // ── Lab Aplikasi 1 (id: 2) ──────────────────────────────────
+  2: [
     "Algoritma dan Struktur Data",
     "Tata Kelola Teknologi Informasi",
     "Sistem Informasi Perbankan Syariah",
@@ -24,8 +24,8 @@ export const laboratoryCourses = {
     "Computer Vision",
   ],
 
-  // ── Lab Aplikasi 2 (id: 2) ──────────────────────────────────
-  2: [
+  // ── Lab Aplikasi 2 (id: 3) ──────────────────────────────────
+  3: [
     "Rekayasa Perangkat Lunak",
     "Interaksi Manusia dan Komputer",
     "Sistem Enterprise",
@@ -34,14 +34,16 @@ export const laboratoryCourses = {
     "Proyek Minor Sistem Informasi",
     "Pendidikan Pancasila",
   ],
-    16: [
+
+  // ── Lab Aplikasi 3 (id: 5) ──────────────────────────────────
+  5: [
     "Rekayasa Perangkat Lunak",
     "Algoritma dan Struktur Data",
     "Pemrograman Berorientasi Objek"
   ],
 
-  // ── Lab Aplikasi 3 / Lab Data Sains (id: 3) ────────────────
-  3: [
+  // ── Lab Data Sains (id: 8) ──────────────────────────────────
+  8: [
     "Natural Language Processing",
     "Statistika Elementer",
     "High Performance Computing",
@@ -49,16 +51,16 @@ export const laboratoryCourses = {
     "Metode Optimasi",
   ],
 
-  // ── Lab Jaringan / Lab Jaringan Komputer (id: 4) ────────────
-  4: [
+  // ── Lab Jaringan Komputer (id: 9) ───────────────────────────
+  9: [
     "Digital Forensic (A)",
     "Internet of Things (IoT)",
     "Digital Forensic (B)",
     "Infrastruktur Teknologi Informasi",
   ],
 
-  // ── Lab Multimedia 1 (id: 6) ────────────────────────────────
-  6: [
+  // ── Lab Multi Media 1 (id: 11) ──────────────────────────────
+  11: [
     "Algoritma dan Struktur Data",
     "Analisis dan Perancangan Sistem Informasi",
     "Rekayasa Perangkat Lunak",
@@ -66,8 +68,8 @@ export const laboratoryCourses = {
     "Konsep Sistem Informasi",
   ],
 
-  // ── Lab Multimedia 2 (id: 7) ────────────────────────────────
-  7: [
+  // ── Lab Multi Media 2 (id: 12) ──────────────────────────────
+  12: [
     "Proyek Minor Sistem Informasi",
     "Interaksi Manusia dan Komputer",
     "Rekayasa Perangkat Lunak",
@@ -75,8 +77,8 @@ export const laboratoryCourses = {
     "Tata Kelola Teknologi Informasi",
   ],
 
-  // ── Lab Programming (id: 8) ─────────────────────────────────
-  8: [
+  // ── Lab Programming (id: 13) ────────────────────────────────
+  13: [
     "Kapita Selekta",
     "Kecerdasan Komputasional",
     "Kriptografi (A)",
@@ -86,15 +88,15 @@ export const laboratoryCourses = {
     "Kriptografi (B)",
   ],
 
-  // ── Lab Digital / Lab Sistem Digital (id: 9) ────────────────
-  9: [
+  // ── Lab Sistem Digital (id: 14) ─────────────────────────────
+  14: [
     "Robotik (B)",
     "Sistem Digital",
     "Robotik (A)",
   ],
 
-  // ── Lab Operasi / Ruang Operasi (id: 15) ────────────────────
-  15: [
+  // ── Ruang Riset Sistem Operasi (id: 18) ─────────────────────
+  18: [
     "Sistem Operasi",
     "Pemrograman Lanjut",
     "Big Data",
