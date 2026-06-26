@@ -19,3 +19,27 @@ export const deleteEntry = async (id) => {
     return { success: false, message };
   }
 };
+
+/**
+ * Hapus entri logbook berdasarkan ID.
+ * DELETE /delete/logbook/:id (Public/Admin)
+ *
+ * @param {string|number} id — ID logbook yang akan dihapus
+ * @returns {Promise<{ success: boolean, message?: string }>}
+ */
+export const deleteLogbook = async (id) => {
+  try {
+    const response = await API.delete(`/delete/logbook/${id}`);
+    // Check if response contains affectedRows or custom status
+    if (response.data && (response.data.status === 200 || response.data.message?.affectedRows > 0)) {
+      return { success: true };
+    }
+    return { success: true, data: response.data };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Gagal menghapus data logbook. Silakan coba lagi.";
+    return { success: false, message };
+  }
+};

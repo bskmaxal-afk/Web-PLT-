@@ -11,7 +11,7 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { loginAdmin, logoutAdmin } from "../services/authService";
 import { createSchedule } from "../services/scheduleService";
-import { deleteEntry } from "../services/historyService";
+import { deleteEntry, deleteLogbook } from "../services/historyService";
 import { updateBookingStatus } from "../services/bookingService";
 
 export default function AdminPanel() {
@@ -269,7 +269,10 @@ export default function AdminPanel() {
     const item = mySchedules.find(s => s.id === id);
     if (item && item._backendId) {
       try {
-        const result = await deleteEntry(item._backendId);
+        const result = item._type === "logbook"
+          ? await deleteLogbook(item._backendId)
+          : await deleteEntry(item._backendId);
+
         if (result.success) {
           alert("Data berhasil dihapus.");
           await refreshData();
