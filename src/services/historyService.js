@@ -78,4 +78,78 @@ export const clearAllSchedules = async () => {
   }
 };
 
+/**
+ * Ambil semua data riwayat logbook dari backend.
+ * GET /get/history/logbook
+ */
+export const getHistoryLogbooks = async () => {
+  try {
+    const response = await API.get("/get/history/logbook");
+    const data = Array.isArray(response.data)
+      ? response.data
+      : response.data?.message || response.data?.data || response.data?.results || [];
+    return { success: true, data };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Gagal memuat riwayat logbook.";
+    return { success: false, message };
+  }
+};
+
+/**
+ * Ambil semua data riwayat jadwal dari backend.
+ * GET /get/history/schadule
+ */
+export const getHistorySchedules = async () => {
+  try {
+    const response = await API.get("/get/history/schadule");
+    const data = Array.isArray(response.data)
+      ? response.data
+      : response.data?.message || response.data?.data || response.data?.results || [];
+    return { success: true, data };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Gagal memuat riwayat jadwal.";
+    return { success: false, message };
+  }
+};
+
+/**
+ * Tambah data logbook ke riwayat backend.
+ * POST /post/history/logbook
+ */
+export const postHistoryLogbook = async (payload) => {
+  try {
+    const response = await API.post("/post/history/logbook", payload);
+    return { success: true, data: response.data };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Gagal menambah riwayat logbook.";
+    return { success: false, message };
+  }
+};
+
+/**
+ * Tambah data jadwal ke riwayat backend.
+ * POST /post/history/schadule
+ */
+export const postHistorySchedule = async (payload) => {
+  try {
+    const response = await API.post("/post/history/schadule", payload);
+    return { success: true, data: response.data };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Gagal menambah riwayat jadwal.";
+    return { success: false, message };
+  }
+};
+
 

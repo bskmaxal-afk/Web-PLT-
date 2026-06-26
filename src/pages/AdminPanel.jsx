@@ -4,14 +4,14 @@ import { AppContext } from "../context/AppContext";
 import { 
   Lock, Eye, EyeOff, LayoutDashboard, FileText, BarChart2, LogOut,
   Search, Filter, Plus, Edit, Trash2, Info, X, Check, Download, Printer, Calendar, Clock, Award,
-  Upload, FileSpreadsheet, FileDown, CheckCircle, XCircle, AlertCircle, MessageCircle
+  Upload, FileSpreadsheet, FileDown, CheckCircle, XCircle, AlertCircle, MessageCircle, History
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { loginAdmin, logoutAdmin } from "../services/authService";
 import { createSchedule } from "../services/scheduleService";
-import { deleteEntry, deleteLogbookEntry, clearAllLogbooks, clearAllSchedules } from "../services/historyService";
+import { deleteEntry, deleteLogbookEntry, clearAllLogbooks, clearAllSchedules, getHistoryLogbooks, getHistorySchedules, postHistoryLogbook, postHistorySchedule } from "../services/historyService";
 import { updateBookingStatus } from "../services/bookingService";
 import Swal from "sweetalert2"
 export default function AdminPanel() {
@@ -40,6 +40,12 @@ export default function AdminPanel() {
 
   // Tab state: "dashboard", "data-penggunaan", "laporan", "buat-jadwal"
   const [activeTab, setActiveTab] = useState("dashboard");
+
+  useEffect(() => {
+    if (isAdminAuthenticated) {
+      refreshHistoryData();
+    }
+  }, [isAdminAuthenticated]);
 
   // Jadwal Kuliah Form States
   const [inputLab, setInputLab] = useState("");
@@ -295,60 +301,373 @@ if (result.success) {
     }
   };
 
-  // Delete Log via backend API
- const handleDeleteLog = async (id) => {
-  const confirmation = await Swal.fire({
-    title: "Hapus Data?",
-    text: "Data yang dihapus tidak dapat dikembalikan.",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Ya, Hapus",
-    cancelButtonText: "Batal",
-  });
+  // States untuk data riwayat backend
+  const [historySchedules, setHistorySchedules] = useState([]);
+  const [historyLogbooks, setHistoryLogbooks] = useState([]);
 
-  if (!confirmation.isConfirmed) return;
-
-  const item = mySchedules.find((s) => s.id === id);
-
-  if (item && item._backendId) {
+  // Fetch riwayat data dari backend
+  const refreshHistoryData = async () => {
     try {
-      // Jika statusnya dipesan / bertipe logbook, hapus menggunakan endpoint /delete/logbook/:id
-      const result = (item._type === "logbook" || item.status === "dipesan")
-        ? await deleteLogbookEntry(item._backendId)
-        : await deleteEntry(item._backendId);
+      const [histSchedRes, histLogRes] = await Promise.all([
+        getHistorySchedules(),
+        getHistoryLogbooks()
+      ]);
+      const rawHistSchedules = histSchedRes.success ? histSchedRes.data : [];
+      const rawHistLogbooks = histLogRes.success ? histLogRes.data : [];
+      setHistorySchedules(rawHistSchedules);
+      setHistoryLogbooks(rawHistLogbooks);
+    } catch (e) {
+      console.error("Gagal memuat data riwayat:", e);
+    }
+  };
 
-      if (result.success) {
+  // Helper: Format payload schedule ke format request backend biasa (/post/formadmin)
+  const formatSchedulePayload = (schedule) => {
+    let labId = 1;
+    if (schedule.ruang) {
+      const matchedLab = laboratories.find(l => l.name.toLowerCase() === schedule.ruang.toLowerCase());
+      if (matchedLab) labId = matchedLab.id;
+    }
+    let jamMulai = "08:00";
+    let jamSelesai = "10:00";
+    if (schedule.jam && schedule.jam.includes("-")) {
+      const parts = schedule.jam.split("-").map(s => s.trim());
+      jamMulai = parts[0] || "08:00";
+      jamSelesai = parts[1] || "10:00";
+    }
+    return {
+      labnya: parseInt(labId, 10),
+      prodinya: schedule.prodi || "",
+      matkulnya: schedule.matkul || "",
+      dosennya: schedule.dosen || "",
+      tanggalnya: schedule.tanggalInput || "",
+      jammulainya: jamMulai,
+      jamselesainya: jamSelesai,
+    };
+  };
+
+  // Helper: Format payload logbook ke format request backend biasa (/post/logbook)
+  const formatLogbookPayload = (logbook) => {
+    return {
+      schadule: parseInt(logbook._scheduleId || logbook.schedule || logbook.schadule, 10),
+      namaKetua: (logbook.mahasiswa || logbook.namaKetua || "").trim(),
+      nim: (logbook.nim || "").trim(),
+      kelas: (logbook.kelas || "").trim(),
+      jumlahPeserta: parseInt(logbook.jumlahHadir || logbook.jumlahPeserta || 0, 10),
+      nomorWa: (logbook.numberwa || logbook.nomorWa || "").trim(),
+    };
+  };
+
+  // Helper: Map dan Parsing riwayat data dari backend ke model frontend
+  const parseDateToISO = (dateStr) => {
+    if (!dateStr) return "";
+    if (dateStr.includes("-")) {
+      const parts = dateStr.split("-");
+      if (parts.length === 3 && parts[2].length === 4) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    }
+    if (dateStr.includes("/")) {
+      const parts = dateStr.split("/");
+      if (parts.length === 3 && parts[2].length === 4) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    }
+    return dateStr;
+  };
+
+  const titleCase = (str) => {
+    if (!str) return "";
+    return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  const mapHistorySchedule = (item) => {
+    const tanggal = item.tanggal || item.tanggalnya || item.tanggalInput || "";
+    const isoTanggal = parseDateToISO(tanggal);
+
+    let hari = item.hari || "";
+    if (!hari && isoTanggal) {
+      const daysIndo = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      const d = new Date(isoTanggal);
+      if (!isNaN(d.getTime())) {
+        hari = daysIndo[d.getDay()];
+      }
+    }
+
+    const jamMulai = item.jam_mulai || item.jammulai || item.jammulainya || "";
+    const jamSelesai = item.jam_selesai || item.jamselesai || item.jamselesainya || "";
+    const jam = jamMulai && jamSelesai ? `${jamMulai} - ${jamSelesai}` : item.jam || "-";
+
+    let ruang = "Lab Umum";
+    const rawRuang = item.nama_lab || item.namaLab || "";
+    if (rawRuang) {
+      const matchedLab = laboratories.find(l => l.name.toLowerCase() === rawRuang.toLowerCase());
+      ruang = matchedLab ? matchedLab.name : titleCase(rawRuang);
+    } else if (item.laboratorium) {
+      ruang = item.laboratorium.nama || item.laboratorium.name || "Lab Umum";
+    }
+
+    let prodi = item.prodi || item.prodinya || "";
+    let kelas = item.kelas || "";
+    if (item.prodi_kelas) {
+      if (item.prodi_kelas.includes(" - ")) {
+        const parts = item.prodi_kelas.split(" - ");
+        prodi = parts[0];
+        kelas = parts[1];
+      } else {
+        prodi = item.prodi_kelas;
+        kelas = item.prodi_kelas;
+      }
+    }
+    if (!prodi) prodi = "Umum";
+    if (!kelas) kelas = "-";
+
+    return {
+      id: item.id,
+      _backendId: item.id,
+      _type: "jadwal",
+      hari: hari || "Senin",
+      jam,
+      dosen: item.dosen || item.dosennya || "-",
+      prodi,
+      kelas,
+      matkul: item.matkul || item.matkulnya || item.mata_kuliah || "Mata Kuliah Umum",
+      ruang,
+      tanggalInput: isoTanggal,
+      mahasiswa: "Admin (Penjadwalan)",
+      nim: "-",
+      numberwa: "-",
+      jumlahHadir: 0,
+      status: "kosong",
+    };
+  };
+
+  const mapHistoryLogbook = (item, schedules = []) => {
+    const scheduleId = item.schadule || item.schedule || item.schadule_id || item.schedule_id || null;
+    const parsedScheduleId = scheduleId ? parseInt(scheduleId, 10) : null;
+
+    const matchedSchedule = (schedules && parsedScheduleId)
+      ? schedules.find(s => parseInt(s.id, 10) === parsedScheduleId || parseInt(s._backendId, 10) === parsedScheduleId)
+      : null;
+
+    const sched = matchedSchedule || {};
+
+    const tanggal = item.tanggal || item.tanggalnya || item.tanggalInput || sched.tanggalInput || "";
+    const isoTanggal = parseDateToISO(tanggal);
+
+    let hari = item.hari || sched.hari || "";
+    if (!hari && isoTanggal) {
+      const daysIndo = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      const d = new Date(isoTanggal);
+      if (!isNaN(d.getTime())) {
+        hari = daysIndo[d.getDay()];
+      }
+    }
+
+    const jamMulai = item.jammulai || item.jammulainya || item.jam_mulai || "";
+    const jamSelesai = item.jamselesai || item.jamselesainya || item.jam_selesai || "";
+    
+    let jam = "-";
+    if (jamMulai && jamSelesai) {
+      jam = `${jamMulai} - ${jamSelesai}`;
+    } else {
+      jam = item.jam || sched.jam || "-";
+    }
+
+    let ruang = "Lab Umum";
+    const rawRuang = item.nama_lab || item.namaLab || sched.ruang || "";
+    if (rawRuang) {
+      const matchedLab = laboratories.find(l => l.name.toLowerCase() === rawRuang.toLowerCase());
+      ruang = matchedLab ? matchedLab.name : titleCase(rawRuang);
+    }
+
+    let prodi = item.prodi || item.prodinya || "";
+    let kelas = item.kelas || "";
+    const rawProdiKelas = item.prodi_kelas || sched.prodi_kelas || "";
+    if (rawProdiKelas) {
+      if (rawProdiKelas.includes(" - ")) {
+        const parts = rawProdiKelas.split(" - ");
+        prodi = parts[0];
+        kelas = parts[1];
+      } else {
+        if (!prodi) prodi = rawProdiKelas;
+        if (!kelas) kelas = rawProdiKelas;
+      }
+    }
+    if (!prodi) prodi = sched.prodi || "Umum";
+    if (!kelas) kelas = sched.kelas || "-";
+
+    const dosen = item.dosen || item.dosennya || sched.dosen || "-";
+    const matkul = item.matkul || item.matkulnya || item.mata_kuliah || sched.matkul || "Mata Kuliah Umum";
+
+    return {
+      id: item.id,
+      _backendId: item.id,
+      _scheduleId: parsedScheduleId || (sched.id ? parseInt(sched.id, 10) : null),
+      _type: "logbook",
+      hari: hari || "Senin",
+      jam,
+      dosen,
+      prodi,
+      kelas,
+      matkul,
+      ruang,
+      tanggalInput: isoTanggal,
+      mahasiswa: item.namaMahasiswa || item.nama_mahasiswa || item.namaKetua || item.nama_ketua || item.mahasiswa || "-",
+      nim: item.nim || "-",
+      numberwa: item.no_wa || item.noWa || item.nomorWa || item.nomor_wa || item.numberwa || "-",
+      jumlahHadir: parseInt(item.jumlah_hadir || item.jumlahHadir || item.jumlahPeserta || item.jumlah_peserta || 0, 10),
+      status: "terpakai"
+    };
+  };
+
+  // Move active logbook/schedule to history and delete from active list
+  const handleAddToHistory = async (item) => {
+    const confirmation = await Swal.fire({
+      title: "Tambahkan ke History?",
+      text: "Data ini akan dipindahkan ke riwayat laporan dan dihapus dari daftar aktif.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Pindahkan",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#3b82f6",
+      cancelButtonColor: "#64748b"
+    });
+
+    if (!confirmation.isConfirmed) return;
+
+    try {
+      // 1. Post to backend history
+      let postResult;
+      if (item._type === "logbook" || item.status === "dipesan" || item.status === "diterima" || item.status === "selesai") {
+        postResult = await postHistoryLogbook(formatLogbookPayload(item));
+      } else {
+        postResult = await postHistorySchedule(formatSchedulePayload(item));
+      }
+
+      if (!postResult.success) {
+        throw new Error(postResult.message || "Gagal menyimpan ke riwayat backend.");
+      }
+
+      // 2. Delete from active backend database
+      let deleteResult;
+      if (item._backendId) {
+        deleteResult = (item._type === "logbook" || item.status === "dipesan")
+          ? await deleteLogbookEntry(item._backendId)
+          : await deleteEntry(item._backendId);
+      } else {
+        deleteResult = { success: true };
+      }
+
+      if (deleteResult.success) {
+        // Jika offline/lokal saja
+        if (!item._backendId) {
+          setMySchedules(mySchedules.filter((s) => s.id !== item.id));
+        }
+
         await Swal.fire({
           icon: "success",
           title: "Berhasil",
-          text: "Data berhasil dihapus.",
+          text: "Data berhasil dipindahkan ke riwayat laporan.",
+          confirmButtonColor: "#3b82f6"
         });
 
         await refreshData();
+        await refreshHistoryData();
       } else {
         Swal.fire({
           icon: "error",
-          title: "Gagal",
-          text: `Gagal menghapus: ${result.message}`,
+          title: "Gagal Menghapus Data Aktif",
+          text: `Gagal: ${deleteResult.message}`,
+          confirmButtonColor: "#3b82f6"
         });
       }
     } catch (err) {
       Swal.fire({
         icon: "error",
-        title: "Koneksi Bermasalah",
-        text: "Gagal menghubungi server. Periksa koneksi Anda.",
+        title: "Terjadi Kesalahan",
+        text: err.message || "Gagal memindahkan data ke riwayat.",
+        confirmButtonColor: "#3b82f6"
       });
     }
-  } else {
-    setMySchedules(mySchedules.filter((s) => s.id !== id));
+  };
 
-    Swal.fire({
-      icon: "success",
-      title: "Berhasil",
-      text: "Data berhasil dihapus.",
+  // Delete Log via backend API
+  const handleDeleteLog = async (id) => {
+    const confirmation = await Swal.fire({
+      title: "Hapus Data?",
+      text: "Data yang dihapus tidak dapat dikembalikan.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
     });
-  }
-};
+
+    if (!confirmation.isConfirmed) return;
+
+    const item = mySchedules.find((s) => s.id === id);
+
+    if (item && item._backendId) {
+      try {
+        // Jika statusnya dipesan / bertipe logbook, hapus menggunakan endpoint /delete/logbook/:id
+        const result = (item._type === "logbook" || item.status === "dipesan")
+          ? await deleteLogbookEntry(item._backendId)
+          : await deleteEntry(item._backendId);
+
+        if (result.success) {
+          // Kirim data ke history backend sebelum refresh
+          try {
+            if (item._type === "logbook" || item.status === "dipesan" || item.status === "diterima" || item.status === "selesai") {
+              await postHistoryLogbook(formatLogbookPayload(item));
+            } else {
+              await postHistorySchedule(formatSchedulePayload(item));
+            }
+          } catch (histErr) {
+            console.error("Gagal mencatat riwayat:", histErr);
+          }
+
+          await Swal.fire({
+            icon: "success",
+            title: "Berhasil",
+            text: "Data berhasil dihapus.",
+          });
+
+          await refreshData();
+          await refreshHistoryData();
+        } else {
+          Swal.fire({
+            icon: "error",
+            title: "Gagal",
+            text: `Gagal menghapus: ${result.message}`,
+          });
+        }
+      } catch (err) {
+        Swal.fire({
+          icon: "error",
+          title: "Koneksi Bermasalah",
+          text: "Gagal menghubungi server. Periksa koneksi Anda.",
+        });
+      }
+    } else {
+      try {
+        if (item && (item._type === "logbook" || item.status === "dipesan" || item.status === "diterima" || item.status === "selesai")) {
+          await postHistoryLogbook(formatLogbookPayload(item));
+        } else if (item) {
+          await postHistorySchedule(formatSchedulePayload(item));
+        }
+      } catch (histErr) {
+        console.error("Gagal mencatat riwayat lokal:", histErr);
+      }
+      setMySchedules(mySchedules.filter((s) => s.id !== id));
+      await refreshHistoryData();
+
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil",
+        text: "Data berhasil dihapus.",
+      });
+    }
+  };
 
   // Clear all data (Logbook & Jadwal) via backend API
   const handleClearAllData = async () => {
@@ -403,6 +722,7 @@ if (result.success) {
       ]);
 
       if (logbookRes.success && scheduleRes.success) {
+        localStorage.removeItem("deleted_logbooks");
         await Swal.fire({
           icon: "success",
           title: "Berhasil",
@@ -706,8 +1026,23 @@ const handleSaveEdit = (e) => {
     });
 
     if (confirmation.isConfirmed) {
+      // Simpan logbook/jadwal terpilih ke history backend sebelum dihapus
+      for (const s of mySchedules) {
+        if (selectedLogIds.includes(s.id)) {
+          try {
+            if (s._type === "logbook" || s.status === "dipesan" || s.status === "diterima" || s.status === "selesai") {
+              await postHistoryLogbook(formatLogbookPayload(s));
+            } else {
+              await postHistorySchedule(formatSchedulePayload(s));
+            }
+          } catch (histErr) {
+            console.error("Gagal mencatat riwayat bulk delete:", histErr);
+          }
+        }
+      }
       setMySchedules(mySchedules.filter(s => !selectedLogIds.includes(s.id)));
       setSelectedLogIds([]);
+      await refreshHistoryData();
       Swal.fire({
         icon: "success",
         title: "Berhasil",
@@ -769,7 +1104,24 @@ const handleSaveEdit = (e) => {
   const currentItems = filteredUsage.slice(indexOfFirstItem, indexOfLastItem);
 
   // Laporan Filtered Output
-  const reportFilteredUsage = mySchedules.filter((log) => {
+  const mappedHistSchedules = historySchedules.map(mapHistorySchedule);
+  const mappedHistLogbooks = historyLogbooks.map(item => mapHistoryLogbook(item, mappedHistSchedules));
+
+  // Set ID jadwal yang sudah dipesan / ada di logbook riwayat
+  const bookedScheduleIds = new Set(mappedHistLogbooks.map(lb => lb._scheduleId).filter(Boolean));
+
+  // Sembunyikan jadwal yang sudah ada di logbook riwayat (jangan tampilkan)
+  const unbookedSchedules = mappedHistSchedules.filter(
+    s => !bookedScheduleIds.has(s.id) && !bookedScheduleIds.has(s._backendId)
+  );
+
+  // Jadwal yang ada di logbook mendapatkan status "terpakai", sedangkan yang tidak ada mendapatkan status "tidak terpakai"
+  const allSchedulesForReport = [
+    ...mappedHistLogbooks.map(lb => ({ ...lb, status: "terpakai" })),
+    ...unbookedSchedules.map(s => ({ ...s, status: "tidak terpakai" }))
+  ];
+
+  const reportFilteredUsage = allSchedulesForReport.filter((log) => {
     // 1. Filter Tanggal (hanya berlaku jika reportType === "semua")
     let matchesDate = true;
     if (reportType === "semua" && (startDate || endDate)) {
@@ -798,18 +1150,16 @@ const handleSaveEdit = (e) => {
       matchesType = logDate >= sixMonthsAgo && logDate <= new Date();
     }
 
-    // 3. Filter Status Keterisian
+    // 3. Filter Status Keterisian (Terpakai / Tidak Terpakai)
     let matchesStatus = true;
-    if (reportStatus === "dipesan") {
-      matchesStatus = log.status === "dipesan" || log.status === "diterima";
-    } else if (reportStatus === "selesai") {
-      matchesStatus = log.status === "selesai";
-    } else if (reportStatus === "kosong") {
-      matchesStatus = log.status === "kosong";
+    if (reportStatus === "terpakai") {
+      matchesStatus = log.status === "terpakai";
+    } else if (reportStatus === "tidak terpakai") {
+      matchesStatus = log.status === "tidak terpakai";
     }
 
-    // 4. Jika status adalah "kosong" (Belum Dipesan), hanya tampilkan jika tanggalnya sudah berlalu (kemarin atau sebelumnya)
-    if (log.status === "kosong") {
+    // 4. Jika status adalah "tidak terpakai", hanya tampilkan jika tanggalnya sudah berlalu (kemarin atau sebelumnya)
+    if (log.status === "tidak terpakai") {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const logDate = new Date(log.tanggalInput);
@@ -832,7 +1182,7 @@ const handleSaveEdit = (e) => {
       });
       return;
     }
-    const headers = ["Hari", "Jam", "Nama Dosen", "Prodi", "Kelas", "Mata Kuliah", "Laboratorium", "Tanggal Input", "Nama Mahasiswa", "NIM", "No WA", "Jumlah Hadir"];
+    const headers = ["Hari", "Jam", "Nama Dosen", "Prodi", "Kelas", "Mata Kuliah", "Laboratorium", "Tanggal Input", "Nama Mahasiswa", "NIM", "No WA", "Jumlah Hadir", "Status"];
     const rows = reportFilteredUsage.map(s => [
       s.hari, 
       s.jam, 
@@ -842,10 +1192,11 @@ const handleSaveEdit = (e) => {
       s.matkul, 
       s.ruang, 
       s.tanggalInput,
-      s.status === "kosong" ? "Belum Dipesan" : (s.mahasiswa || "-"),
-      s.status === "kosong" ? "Belum Dipesan" : (s.nim || "-"),
-      s.status === "kosong" ? "Belum Dipesan" : (s.numberwa || "-"),
-      s.status === "kosong" ? 0 : (s.jumlahHadir || 0)
+      s.status === "tidak terpakai" ? "Belum Dipesan" : (s.mahasiswa || "-"),
+      s.status === "tidak terpakai" ? "Belum Dipesan" : (s.nim || "-"),
+      s.status === "tidak terpakai" ? "Belum Dipesan" : (s.numberwa || "-"),
+      s.status === "tidak terpakai" ? 0 : (s.jumlahHadir || 0),
+      s.status === "tidak terpakai" ? "Tidak Terpakai" : "Terpakai"
     ]);
     
     const wsData = [headers, ...rows];
@@ -900,11 +1251,11 @@ const handleSaveEdit = (e) => {
     doc.setFont("Helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(100);
-    const dateRangeStr = `Periode: ${reportType === "harian" ? "Harian (Hari Ini)" : reportType === "semester" ? "Semester (6 Bulan Terakhir)" : `Kustom (${startDate || "Awal"} s.d. ${endDate || "Sekarang"})`} | Status: ${reportStatus === "dipesan" ? "Dipesan (Ada Kegiatan)" : reportStatus === "selesai" ? "Selesai (Kegiatan Berakhir)" : reportStatus === "kosong" ? "Belum Dipesan (Kosong)" : "Semua Status"}`;
+    const dateRangeStr = `Periode: ${reportType === "harian" ? "Harian (Hari Ini)" : reportType === "semester" ? "Semester (6 Bulan Terakhir)" : `Kustom (${startDate || "Awal"} s.d. ${endDate || "Sekarang"})`} | Status: ${reportStatus === "terpakai" ? "Terpakai" : reportStatus === "tidak terpakai" ? "Tidak Terpakai" : "Semua Status"}`;
     doc.text(dateRangeStr, 14, 24);
     
     const tableHeaders = [
-      ["No", "Tanggal", "Hari", "Jam", "Ruang/Lab", "Dosen", "Mata Kuliah", "Prodi / Kelas", "Mahasiswa (PJ)", "NIM", "No WA", "Hadir"]
+      ["No", "Tanggal", "Hari", "Jam", "Ruang/Lab", "Dosen", "Mata Kuliah", "Prodi / Kelas", "Mahasiswa (PJ)", "NIM", "No WA", "Hadir", "Status"]
     ];
     
     const tableRows = reportFilteredUsage.map((s, idx) => [
@@ -916,10 +1267,11 @@ const handleSaveEdit = (e) => {
       s.dosen,
       s.matkul,
       `${s.prodi} (${s.kelas})`,
-      s.status === "kosong" ? "Belum Dipesan" : (s.mahasiswa || "-"),
-      s.status === "kosong" ? "Belum Dipesan" : (s.nim || "-"),
-      s.status === "kosong" ? "Belum Dipesan" : (s.numberwa || "-"),
-      s.status === "kosong" ? "-" : (s.jumlahHadir || 0)
+      s.status === "tidak terpakai" ? "Belum Dipesan" : (s.mahasiswa || "-"),
+      s.status === "tidak terpakai" ? "Belum Dipesan" : (s.nim || "-"),
+      s.status === "tidak terpakai" ? "Belum Dipesan" : (s.numberwa || "-"),
+      s.status === "tidak terpakai" ? "-" : (s.jumlahHadir || 0),
+      s.status === "tidak terpakai" ? "Tidak Terpakai" : "Terpakai"
     ]);
     
     doc.autoTable({
@@ -938,18 +1290,19 @@ const handleSaveEdit = (e) => {
         textColor: 50
       },
       columnStyles: {
-        0: { cellWidth: 8 },
-        1: { cellWidth: 20 },
-        2: { cellWidth: 15 },
-        3: { cellWidth: 25 },
-        4: { cellWidth: 25 },
-        5: { cellWidth: 30 },
-        6: { cellWidth: 35 },
-        7: { cellWidth: 30 },
-        8: { cellWidth: 30 },
-        9: { cellWidth: 20 },
-        10: { cellWidth: 25 },
-        11: { cellWidth: 12 }
+        0: { cellWidth: 8 },  // No
+        1: { cellWidth: 18 }, // Tanggal
+        2: { cellWidth: 12 }, // Hari
+        3: { cellWidth: 20 }, // Jam
+        4: { cellWidth: 20 }, // Ruang/Lab
+        5: { cellWidth: 25 }, // Dosen
+        6: { cellWidth: 30 }, // Mata Kuliah
+        7: { cellWidth: 25 }, // Prodi/Kelas
+        8: { cellWidth: 25 }, // Mahasiswa (PJ)
+        9: { cellWidth: 18 }, // NIM
+        10: { cellWidth: 22 }, // No WA
+        11: { cellWidth: 10 }, // Hadir
+        12: { cellWidth: 15 }  // Status
       },
       margin: { top: 28, left: 14, right: 14 },
       didDrawPage: (data) => {
@@ -1925,6 +2278,13 @@ const handleSaveEdit = (e) => {
                                 <Edit size={14} />
                               </button>
                               <button
+                                onClick={() => handleAddToHistory(log)}
+                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                                title="Tambahkan ke History"
+                              >
+                                <History size={14} />
+                              </button>
+                              <button
                                 onClick={() => handleDeleteLog(log.id)}
                                 className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
                                 title="Hapus Data"
@@ -2058,9 +2418,8 @@ const handleSaveEdit = (e) => {
                     className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white cursor-pointer"
                   >
                     <option value="semua">Semua Status</option>
-                    <option value="dipesan">Dipesan (Ada Kegiatan)</option>
-                    <option value="selesai">Selesai (Kegiatan Berakhir)</option>
-                    <option value="kosong">Belum Dipesan (Kosong)</option>
+                    <option value="terpakai">Terpakai</option>
+                    <option value="tidak terpakai">Tidak Terpakai</option>
                   </select>
                 </div>
                 
@@ -2112,7 +2471,7 @@ const handleSaveEdit = (e) => {
             <div className="hidden print:block text-center border-b-2 border-slate-900 pb-5 mb-6">
               <h1 className="text-xl font-bold text-slate-950 font-display">LAPORAN LOG BOOK PENGGUNAAN LABORATORIUM</h1>
               <p className="text-xs text-slate-600 mt-1.5">
-                Periode: {reportType === "harian" ? "Harian (Hari Ini)" : reportType === "semester" ? "Semester (6 Bulan Terakhir)" : `Kustom (${startDate || "Awal"} s.d. {endDate || "Sekarang"})`} | Status: {reportStatus === "dipesan" ? "Dipesan (Ada Kegiatan)" : reportStatus === "selesai" ? "Selesai (Kegiatan Berakhir)" : reportStatus === "kosong" ? "Belum Dipesan (Kosong)" : "Semua Status"}
+                Periode: {reportType === "harian" ? "Harian (Hari Ini)" : reportType === "semester" ? "Semester (6 Bulan Terakhir)" : `Kustom (${startDate || "Awal"} s.d. ${endDate || "Sekarang"})`} | Status: {reportStatus === "terpakai" ? "Terpakai" : reportStatus === "tidak terpakai" ? "Tidak Terpakai" : "Semua Status"}
               </p>
             </div>
 
@@ -2127,6 +2486,7 @@ const handleSaveEdit = (e) => {
                       <th className="px-6 py-4">Dosen & Perkuliahan</th>
                       <th className="px-6 py-4">Mahasiswa (P.J.) & NIM</th>
                       <th className="px-6 py-4">Kontak & Kehadiran</th>
+                      <th className="px-6 py-4">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -2146,25 +2506,36 @@ const handleSaveEdit = (e) => {
                           </td>
                           <td className="px-6 py-4">
                             <div className="font-semibold text-slate-800">
-                              {log.status === "kosong" ? "Belum Dipesan" : (log.mahasiswa || "-")}
+                              {log.status === "tidak terpakai" ? "Belum Dipesan" : (log.mahasiswa || "-")}
                             </div>
                             <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                              {log.status === "kosong" ? "Belum Dipesan" : (log.nim || "-")}
+                              {log.status === "tidak terpakai" ? "Belum Dipesan" : (log.nim || "-")}
                             </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="text-slate-700">
-                              {log.status === "kosong" ? "Belum Dipesan" : (log.numberwa || "-")}
+                              {log.status === "tidak terpakai" ? "Belum Dipesan" : (log.numberwa || "-")}
                             </div>
-                            <div className={`text-[9px] font-bold mt-1 ${log.status === "kosong" ? "text-slate-400" : "text-emerald-600"}`}>
-                              {log.status === "kosong" ? "-" : `${log.jumlahHadir || 0} Orang`}
+                            <div className={`text-[9px] font-bold mt-1 ${log.status === "tidak terpakai" ? "text-slate-400" : "text-emerald-600"}`}>
+                              {log.status === "tidak terpakai" ? "-" : `${log.jumlahHadir || 0} Orang`}
                             </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {log.status === "tidak terpakai" ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 border border-red-200 text-red-700 rounded-full text-[10px] font-bold">
+                                <XCircle size={11} className="text-red-400" /> Tidak Terpakai
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-[10px] font-bold">
+                                <CheckCircle size={11} /> Terpakai
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-semibold">
+                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-semibold">
                           Tidak ada data log book pada rentang tanggal tersebut.
                         </td>
                       </tr>
