@@ -11,7 +11,7 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { loginAdmin, logoutAdmin } from "../services/authService";
 import { createSchedule } from "../services/scheduleService";
-import { deleteEntry } from "../services/historyService";
+import { deleteEntry, deleteLogbookEntry, clearAllLogbooks, clearAllSchedules } from "../services/historyService";
 import { updateBookingStatus } from "../services/bookingService";
 import Swal from "sweetalert2"
 export default function AdminPanel() {
@@ -312,7 +312,10 @@ if (result.success) {
 
   if (item && item._backendId) {
     try {
-      const result = await deleteEntry(item._backendId);
+      // Jika statusnya dipesan / bertipe logbook, hapus menggunakan endpoint /delete/logbook/:id
+      const result = (item._type === "logbook" || item.status === "dipesan")
+        ? await deleteLogbookEntry(item._backendId)
+        : await deleteEntry(item._backendId);
 
       if (result.success) {
         await Swal.fire({
@@ -346,8 +349,92 @@ if (result.success) {
     });
   }
 };
+
+  // Clear all data (Logbook & Jadwal) via backend API
+  const handleClearAllData = async () => {
+    // Pop-up 1: "apakah kamu yakin ?"
+    const confirmation1 = await Swal.fire({
+      title: "Apakah kamu yakin?",
+      text: "Tindakan ini akan mengosongkan/menghapus seluruh data logbook dan jadwal perkuliahan!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Lanjutkan",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b",
+    });
+
+    if (!confirmation1.isConfirmed) return;
+
+    // Pop-up 2: "jika yakin silakan input 'DELETE' untuk menghapus"
+    const confirmation2 = await Swal.fire({
+      title: "Konfirmasi Penghapusan",
+      text: 'Jika yakin, silakan input "DELETE" untuk menghapus seluruh data:',
+      input: "text",
+      inputPlaceholder: "DELETE",
+      showCancelButton: true,
+      confirmButtonText: "Hapus Semua",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b",
+      inputValidator: (value) => {
+        if (value !== "DELETE") {
+          return 'Anda harus mengetik "DELETE" (dengan huruf kapital)!';
+        }
+      }
+    });
+
+    if (!confirmation2.isConfirmed || confirmation2.value !== "DELETE") return;
+
+    // Call both endpoints
+    try {
+      Swal.fire({
+        title: "Sedang menghapus...",
+        text: "Mohon tunggu sebentar.",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const [logbookRes, scheduleRes] = await Promise.all([
+        clearAllLogbooks(),
+        clearAllSchedules(),
+      ]);
+
+      if (logbookRes.success && scheduleRes.success) {
+        await Swal.fire({
+          icon: "success",
+          title: "Berhasil",
+          text: "Seluruh data logbook dan jadwal berhasil dikosongkan.",
+          confirmButtonColor: "#3b82f6"
+        });
+        await refreshData();
+      } else {
+        const errorMsg = [
+          !logbookRes.success && `Logbook: ${logbookRes.message}`,
+          !scheduleRes.success && `Jadwal: ${scheduleRes.message}`,
+        ].filter(Boolean).join(" | ");
+
+        Swal.fire({
+          icon: "error",
+          title: "Sebagian atau Seluruh Data Gagal Dihapus",
+          text: errorMsg,
+          confirmButtonColor: "#3b82f6"
+        });
+      }
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Koneksi Bermasalah",
+        text: "Gagal menghubungi server. Periksa koneksi Anda.",
+        confirmButtonColor: "#3b82f6"
+      });
+    }
+  };
+
   // Approve booking (Terima) - adds notification to student
-const handleApprove = async (log) => {
+  const handleApprove = async (log) => {
   const result = await updateBookingStatus(log.id, "diterima");
 
   if (!result.success) {
@@ -1911,25 +1998,19 @@ const handleSaveEdit = (e) => {
                 </div>
                 <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
                   <button
-                    onClick={handleBulkApprove}
-                    className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition duration-200 cursor-pointer shadow-xs"
-                  >
-                    <CheckCircle size={14} />
-                    Terima Terpilih
-                  </button>
-                  <button
-                    onClick={handleBulkReject}
-                    className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition duration-200 cursor-pointer shadow-xs"
-                  >
-                    <XCircle size={14} />
-                    Tolak Terpilih
-                  </button>
-                  <button
                     onClick={handleBulkDelete}
                     className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition duration-200 cursor-pointer shadow-xs"
                   >
                     <Trash2 size={14} />
                     Hapus Terpilih
+                  </button>
+                  <button
+                    onClick={handleClearAllData}
+                    className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition duration-200 cursor-pointer shadow-xs"
+                    title="Kosongkan seluruh data logbook dan jadwal kuliah"
+                  >
+                    <Trash2 size={14} />
+                    Hapus Semua Data
                   </button>
                   <button
                     onClick={() => setSelectedLogIds([])}
