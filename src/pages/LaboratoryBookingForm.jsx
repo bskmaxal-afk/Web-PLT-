@@ -151,7 +151,9 @@ export default function LaboratoryBookingForm() {
     if (!selectedScheduleId) {
       newErrors.schedule = "Silakan pilih jadwal kuliah yang tersedia terlebih dahulu.";
     } else {
-      const scheduleBackendId = selectedSchedule?._backendId || selectedSchedule?.id;
+      const scheduleBackendId = selectedSchedule?._type === "logbook"
+        ? selectedSchedule?._scheduleId
+        : (selectedSchedule?._backendId || selectedSchedule?.id);
       if (scheduleBackendId) {
         const isAlreadyBooked = mySchedules.some(
           (s) =>
@@ -198,7 +200,9 @@ export default function LaboratoryBookingForm() {
     e.preventDefault();
     
     // Check if this schedule is already booked right before validation to alert user
-    const scheduleBackendId = selectedSchedule?._backendId || selectedSchedule?.id;
+    const scheduleBackendId = selectedSchedule?._type === "logbook"
+      ? selectedSchedule?._scheduleId
+      : (selectedSchedule?._backendId || selectedSchedule?.id);
     if (scheduleBackendId) {
       const isAlreadyBooked = mySchedules.some(
         (s) =>
