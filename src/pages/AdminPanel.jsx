@@ -20,6 +20,7 @@ export default function AdminPanel() {
     setAdminAuthenticated, 
     mySchedules, 
     setMySchedules,
+    myHistorySchedules,
     laboratories,
     addNotification,
     refreshData,
@@ -769,7 +770,7 @@ const handleSaveEdit = (e) => {
   const currentItems = filteredUsage.slice(indexOfFirstItem, indexOfLastItem);
 
   // Laporan Filtered Output
-  const reportFilteredUsage = mySchedules.filter((log) => {
+  const reportFilteredUsage = myHistorySchedules.filter((log) => {
     // 1. Filter Tanggal (hanya berlaku jika reportType === "semua")
     let matchesDate = true;
     if (reportType === "semua" && (startDate || endDate)) {
@@ -1030,14 +1031,52 @@ const handleSaveEdit = (e) => {
         const data = new Uint8Array(event.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
         
-        if (workbook.SheetNames.length < 2) {
-          throw new Error("Sheet kedua tidak ditemukan pada file Excel.");
+        let worksheet = null;
+        let sheetName = "";
+        let rows = [];
+        
+        // Loop through all sheets in the workbook to search for the one that has the header row
+        for (let i = 0; i < workbook.SheetNames.length; i++) {
+          const name = workbook.SheetNames[i];
+          const ws = workbook.Sheets[name];
+          const wsRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+          
+          let foundHeader = false;
+          for (let r = 0; r < Math.min(wsRows.length, 50); r++) {
+            const row = wsRows[r];
+            if (!row || row.length === 0) continue;
+            const rowStrings = row.map(cell => String(cell || "").toLowerCase().trim());
+            const hasHari = rowStrings.some(s => s === "hari");
+            const hasJam = rowStrings.some(s => s === "jam" || s === "waktu");
+            const hasMatkul = rowStrings.some(s => s.includes("matkul") || s.includes("mata kuliah") || s.includes("matakuliah"));
+            
+            if (hasHari && (hasJam || hasMatkul)) {
+              foundHeader = true;
+              break;
+            }
+          }
+          if (foundHeader) {
+            worksheet = ws;
+            sheetName = name;
+            rows = wsRows;
+            break;
+          }
         }
         
-        const sheetName = workbook.SheetNames[1];
-        const worksheet = workbook.Sheets[sheetName];
-        
-        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+        // Fallback if no sheet has identified headers
+        if (!worksheet) {
+          if (workbook.SheetNames.length >= 2) {
+            sheetName = workbook.SheetNames[1];
+            worksheet = workbook.Sheets[sheetName];
+            rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+          } else if (workbook.SheetNames.length >= 1) {
+            sheetName = workbook.SheetNames[0];
+            worksheet = workbook.Sheets[sheetName];
+            rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+          } else {
+            throw new Error("Tidak ada sheet yang ditemukan pada file Excel.");
+          }
+        }
         if (rows.length === 0) {
           setImportError("File kosong!");
           return;
@@ -1251,6 +1290,8 @@ const handleSaveEdit = (e) => {
         console.error(err);
         if (err.message === "Sheet kedua tidak ditemukan pada file Excel.") {
           setImportError("Sheet kedua tidak ditemukan pada file Excel.");
+        } else if (err.message) {
+          setImportError(err.message);
         } else {
           setImportError("Gagal memparsing file. Silakan periksa kembali berkas Anda.");
         }

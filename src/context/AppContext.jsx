@@ -3,6 +3,7 @@ import { createContext, useState, useCallback, useEffect, useRef } from "react";
 import { labs } from "../data/labs";
 import { getAllSchedules } from "../services/scheduleService";
 import { getAllLogbooks } from "../services/bookingService";
+import { getHistorySchedules, getHistoryLogbooks } from "../services/historyService";
 import { isAuthenticated, isTokenExpired, getTokenRemainingTime, logoutAdmin } from "../services/authService";
 import { getLabs } from "../services/laboratoryService";
 import {
@@ -355,6 +356,9 @@ export const AppProvider = ({ children }) => {
 
   // User logbook schedules / bookings — start empty, filled from backend
   const [mySchedules, setMySchedules] = useState([]);
+  
+  // History schedules / bookings — start empty, filled from backend history endpoints
+  const [myHistorySchedules, setMyHistorySchedules] = useState([]);
 
   // Loading state for data fetching
   const [isDataLoading, setIsDataLoading] = useState(false);
@@ -395,16 +399,40 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   /**
+   * Gabungkan (merge) data history schedules + logbooks menjadi myHistorySchedules.
+   */
+  const mergeAndUpdateHistorySchedules = useCallback((rawHistSchedules, rawHistLogbooks) => {
+    const schedules = rawHistSchedules.map(mapBackendSchedule);
+    const logbooks = rawHistLogbooks.map(item => mapBackendLogbook(item, schedules));
+
+    // Gabungkan untuk history: logbook entries menimpa jadwal yang sudah di-booking
+    const bookedScheduleIds = new Set(
+      logbooks
+        .filter(lb => lb.status !== "ditolak" && !isScheduleFinished(lb.tanggalInput, lb.jam))
+        .map(lb => lb._scheduleId)
+        .filter(lbId => lbId !== null && lbId !== undefined)
+    );
+    const unbookedSchedules = schedules.filter(
+      s => !bookedScheduleIds.has(s._backendId) && !bookedScheduleIds.has(s.id)
+    );
+
+    setMyHistorySchedules([...logbooks, ...unbookedSchedules]);
+  }, []);
+
+  /**
    * Fetch jadwal + logbook dari backend via HTTP dan gabungkan ke mySchedules.
+   * Juga fetch data riwayat (history) jadwal + logbook dan gabungkan ke myHistorySchedules.
    * Dipanggil saat initial load dan setelah operasi CRUD lokal.
    * Juga menyimpan raw data ke refs untuk digunakan oleh socket handlers.
    */
   const refreshData = useCallback(async () => {
     setIsDataLoading(true);
     try {
-      const [schedRes, logRes] = await Promise.all([
+      const [schedRes, logRes, histSchedRes, histLogRes] = await Promise.all([
         getAllSchedules(),
         getAllLogbooks(),
+        getHistorySchedules(),
+        getHistoryLogbooks(),
       ]);
 
       const rawSchedules = schedRes.success
@@ -414,18 +442,28 @@ export const AppProvider = ({ children }) => {
         ? (Array.isArray(logRes.data) ? logRes.data : [])
         : [];
 
+      const rawHistSchedules = histSchedRes.success
+        ? (Array.isArray(histSchedRes.data) ? histSchedRes.data : [])
+        : [];
+      const rawHistLogbooks = histLogRes.success
+        ? (Array.isArray(histLogRes.data) ? histLogRes.data : [])
+        : [];
+
       // Simpan ke refs
       rawSchedulesRef.current = rawSchedules;
       rawLogbooksRef.current = rawLogbooks;
 
-      // Map dan merge
+      // Map dan merge data aktif
       mergeAndUpdateSchedules(rawSchedules, rawLogbooks);
+      
+      // Map dan merge data history
+      mergeAndUpdateHistorySchedules(rawHistSchedules, rawHistLogbooks);
     } catch (err) {
       console.error("Gagal mengambil data dari server:", err);
     } finally {
       setIsDataLoading(false);
     }
-  }, [mergeAndUpdateSchedules]);
+  }, [mergeAndUpdateSchedules, mergeAndUpdateHistorySchedules]);
 
   // Fetch daftar laboratorium dari backend on mount
   useEffect(() => {
@@ -511,6 +549,8 @@ export const AppProvider = ({ children }) => {
         setSelectedLaboratory,
         mySchedules,
         setMySchedules,
+        myHistorySchedules,
+        setMyHistorySchedules,
         isAdminAuthenticated,
         setAdminAuthenticated,
         tokenExpired,

@@ -78,4 +78,49 @@ export const clearAllSchedules = async () => {
   }
 };
 
+/**
+ * Ambil semua data riwayat jadwal (Protected - butuh JWT).
+ * GET /get/history/schadule
+ *
+ * @returns {Promise<{ success: boolean, data?: Array, message?: string }>}
+ */
+export const getHistorySchedules = async () => {
+  try {
+    const response = await API.get("/get/history/schadule");
+    const data = Array.isArray(response.data)
+      ? response.data
+      : response.data?.message || response.data?.data || response.data?.results || [];
+    return { success: true, data };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Gagal memuat data riwayat jadwal. Silakan coba lagi.";
+    return { success: false, message };
+  }
+};
+
+/**
+ * Ambil semua data riwayat logbook (Protected - butuh JWT).
+ * GET /get/history/logbook
+ *
+ * @returns {Promise<{ success: boolean, data?: Array, message?: string }>}
+ */
+export const getHistoryLogbooks = async () => {
+  try {
+    const response = await API.get("/get/history/logbook");
+    const data = Array.isArray(response.data)
+      ? response.data
+      : response.data?.message || response.data?.data || response.data?.results || [];
+    return { success: true, data };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Gagal memuat data riwayat logbook. Silakan coba lagi.";
+    return { success: false, message };
+  }
+};
+
+
 
