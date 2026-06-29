@@ -336,7 +336,14 @@ if (result.success) {
       jamMulai = parts[0] || "08:00";
       jamSelesai = parts[1] || "10:00";
     }
+    
+    const originalId = schedule._type === "logbook" 
+      ? schedule._scheduleId 
+      : (schedule.id || schedule._backendId);
+
     return {
+      id: originalId ? parseInt(originalId, 10) : null,
+      schadule: originalId ? parseInt(originalId, 10) : null,
       labnya: parseInt(labId, 10),
       prodinya: schedule.prodi || "",
       matkulnya: schedule.matkul || "",
@@ -349,8 +356,21 @@ if (result.success) {
 
   // Helper: Format payload logbook ke format request backend biasa (/post/logbook)
   const formatLogbookPayload = (logbook) => {
+    let scheduleId = logbook._scheduleId || logbook.scheduleId || logbook.schaduleId;
+    
+    if (!scheduleId) {
+      const rawSched = logbook.schadule || logbook.schedule || logbook.jadwal;
+      if (rawSched) {
+        if (typeof rawSched === "object") {
+          scheduleId = rawSched.id || rawSched._backendId || rawSched.scheduleId || rawSched.schaduleId;
+        } else {
+          scheduleId = rawSched;
+        }
+      }
+    }
+    
     return {
-      schadule: parseInt(logbook._scheduleId || logbook.schedule || logbook.schadule, 10),
+      schadule: scheduleId ? parseInt(scheduleId, 10) : null,
       namaKetua: (logbook.mahasiswa || logbook.namaKetua || "").trim(),
       nim: (logbook.nim || "").trim(),
       kelas: (logbook.kelas || "").trim(),
@@ -406,6 +426,10 @@ if (result.success) {
       ruang = matchedLab ? matchedLab.name : titleCase(rawRuang);
     } else if (item.laboratorium) {
       ruang = item.laboratorium.nama || item.laboratorium.name || "Lab Umum";
+    } else if (item.labnya || item.id_lab || item.namalab) {
+      const labId = item.labnya || item.id_lab || item.namalab;
+      const matchedLab = laboratories.find(l => l.id === parseInt(labId, 10));
+      ruang = matchedLab ? matchedLab.name : `Lab ID-${labId}`;
     }
 
     let prodi = item.prodi || item.prodinya || "";
@@ -445,18 +469,24 @@ if (result.success) {
 
   const mapHistoryLogbook = (item, schedules = []) => {
     const scheduleId = item.schadule || item.schedule || item.schadule_id || item.schedule_id || null;
-    const parsedScheduleId = scheduleId ? parseInt(scheduleId, 10) : null;
+    const parsedScheduleId = (scheduleId && typeof scheduleId !== "object") ? parseInt(scheduleId, 10) : null;
 
     const matchedSchedule = (schedules && parsedScheduleId)
       ? schedules.find(s => parseInt(s.id, 10) === parsedScheduleId || parseInt(s._backendId, 10) === parsedScheduleId)
       : null;
 
-    const sched = matchedSchedule || {};
+    const sched = matchedSchedule || 
+                  (typeof item.schadule === "object" ? item.schadule : null) || 
+                  (typeof item.schedule === "object" ? item.schedule : null) || 
+                  (typeof item.jadwal === "object" ? item.jadwal : null) || 
+                  {};
 
-    const tanggal = item.tanggal || item.tanggalnya || item.tanggalInput || sched.tanggalInput || "";
+    const isAlreadyMapped = sched._type === "jadwal";
+    const tanggal = item.tanggal || item.tanggalnya || item.tanggalInput || 
+                    (isAlreadyMapped ? sched.tanggalInput : (sched.tanggal || sched.tanggalnya || ""));
     const isoTanggal = parseDateToISO(tanggal);
 
-    let hari = item.hari || sched.hari || "";
+    let hari = item.hari || (isAlreadyMapped ? sched.hari : (sched.hari || ""));
     if (!hari && isoTanggal) {
       const daysIndo = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
       const d = new Date(isoTanggal);
@@ -465,8 +495,10 @@ if (result.success) {
       }
     }
 
-    const jamMulai = item.jammulai || item.jammulainya || item.jam_mulai || "";
-    const jamSelesai = item.jamselesai || item.jamselesainya || item.jam_selesai || "";
+    const jamMulai = item.jammulai || item.jammulainya || item.jam_mulai || 
+                      (!isAlreadyMapped ? (sched.jam_mulai || sched.jammulai || sched.jamMulai || "") : "");
+    const jamSelesai = item.jamselesai || item.jamselesainya || item.jam_selesai || 
+                        (!isAlreadyMapped ? (sched.jam_selesai || sched.jamselesai || sched.jamSelesai || "") : "");
     
     let jam = "-";
     if (jamMulai && jamSelesai) {
@@ -476,7 +508,8 @@ if (result.success) {
     }
 
     let ruang = "Lab Umum";
-    const rawRuang = item.nama_lab || item.namaLab || sched.ruang || "";
+    const rawRuang = item.nama_lab || item.namaLab || 
+                      (!isAlreadyMapped ? (sched.nama_lab || sched.namaLab || sched.ruang || "") : sched.ruang);
     if (rawRuang) {
       const matchedLab = laboratories.find(l => l.name.toLowerCase() === rawRuang.toLowerCase());
       ruang = matchedLab ? matchedLab.name : titleCase(rawRuang);
@@ -495,11 +528,13 @@ if (result.success) {
         if (!kelas) kelas = rawProdiKelas;
       }
     }
-    if (!prodi) prodi = sched.prodi || "Umum";
-    if (!kelas) kelas = sched.kelas || "-";
+    if (!prodi) prodi = isAlreadyMapped ? sched.prodi : (sched.prodi || "Umum");
+    if (!kelas) kelas = isAlreadyMapped ? sched.kelas : (sched.kelas || "-");
 
-    const dosen = item.dosen || item.dosennya || sched.dosen || "-";
-    const matkul = item.matkul || item.matkulnya || item.mata_kuliah || sched.matkul || "Mata Kuliah Umum";
+    const dosen = item.dosen || item.dosennya || 
+                  (isAlreadyMapped ? sched.dosen : (sched.dosen || sched.dosennya || "-"));
+    const matkul = item.matkul || item.matkulnya || item.mata_kuliah || 
+                   (isAlreadyMapped ? sched.matkul : (sched.matkul || sched.matkulnya || sched.mata_kuliah || "Mata Kuliah Umum"));
 
     return {
       id: item.id,
@@ -541,6 +576,13 @@ if (result.success) {
       // 1. Post to backend history
       let postResult;
       if (item._type === "logbook" || item.status === "dipesan" || item.status === "diterima" || item.status === "selesai") {
+        // Post the parent schedule details first
+        const schedPostResult = await postHistorySchedule(formatSchedulePayload(item));
+        if (!schedPostResult.success) {
+          throw new Error(schedPostResult.message || "Gagal menyimpan jadwal induk ke riwayat backend.");
+        }
+        
+        // Post the logbook details second
         postResult = await postHistoryLogbook(formatLogbookPayload(item));
       } else {
         postResult = await postHistorySchedule(formatSchedulePayload(item));
@@ -553,7 +595,7 @@ if (result.success) {
       // 2. Delete from active backend database
       let deleteResult;
       if (item._backendId) {
-        deleteResult = (item._type === "logbook" || item.status === "dipesan")
+        deleteResult = (item._type === "logbook" || item.status === "dipesan" || item.status === "diterima" || item.status === "selesai")
           ? await deleteLogbookEntry(item._backendId)
           : await deleteEntry(item._backendId);
       } else {
@@ -611,7 +653,7 @@ if (result.success) {
     if (item && item._backendId) {
       try {
         // Jika statusnya dipesan / bertipe logbook, hapus menggunakan endpoint /delete/logbook/:id
-        const result = (item._type === "logbook" || item.status === "dipesan")
+        const result = (item._type === "logbook" || item.status === "dipesan" || item.status === "diterima" || item.status === "selesai")
           ? await deleteLogbookEntry(item._backendId)
           : await deleteEntry(item._backendId);
 
@@ -619,7 +661,10 @@ if (result.success) {
           // Kirim data ke history backend sebelum refresh
           try {
             if (item._type === "logbook" || item.status === "dipesan" || item.status === "diterima" || item.status === "selesai") {
-              await postHistoryLogbook(formatLogbookPayload(item));
+              const schedHistRes = await postHistorySchedule(formatSchedulePayload(item));
+              if (schedHistRes.success) {
+                await postHistoryLogbook(formatLogbookPayload(item));
+              }
             } else {
               await postHistorySchedule(formatSchedulePayload(item));
             }
@@ -1032,7 +1077,10 @@ const handleSaveEdit = (e) => {
         if (selectedLogIds.includes(s.id)) {
           try {
             if (s._type === "logbook" || s.status === "dipesan" || s.status === "diterima" || s.status === "selesai") {
-              await postHistoryLogbook(formatLogbookPayload(s));
+              const schedHistRes = await postHistorySchedule(formatSchedulePayload(s));
+              if (schedHistRes.success) {
+                await postHistoryLogbook(formatLogbookPayload(s));
+              }
             } else {
               await postHistorySchedule(formatSchedulePayload(s));
             }
@@ -1106,7 +1154,8 @@ const handleSaveEdit = (e) => {
 
   // Laporan Filtered Output
   const mappedHistSchedules = historySchedules.map(mapHistorySchedule);
-  const mappedHistLogbooks = historyLogbooks.map(item => mapHistoryLogbook(item, mappedHistSchedules));
+  const allSchedulesForLookup = [...mappedHistSchedules, ...mySchedules];
+  const mappedHistLogbooks = historyLogbooks.map(item => mapHistoryLogbook(item, allSchedulesForLookup));
 
   // Set ID jadwal yang sudah dipesan / ada di logbook riwayat
   const bookedScheduleIds = new Set(mappedHistLogbooks.map(lb => lb._scheduleId).filter(Boolean));
@@ -1157,16 +1206,6 @@ const handleSaveEdit = (e) => {
       matchesStatus = log.status === "terpakai";
     } else if (reportStatus === "tidak terpakai") {
       matchesStatus = log.status === "tidak terpakai";
-    }
-
-    // 4. Jika status adalah "tidak terpakai", hanya tampilkan jika tanggalnya sudah berlalu (kemarin atau sebelumnya)
-    if (log.status === "tidak terpakai") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const logDate = new Date(log.tanggalInput);
-      if (logDate >= today) {
-        return false;
-      }
     }
 
     return matchesDate && matchesType && matchesStatus;

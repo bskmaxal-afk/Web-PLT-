@@ -14,6 +14,7 @@ export const deleteEntry = async (id) => {
   } catch (error) {
     const message =
       error.response?.data?.message ||
+      error.response?.data?.massage ||
       error.response?.data?.error ||
       "Gagal menghapus data. Silakan coba lagi.";
     return { success: false, message };
@@ -34,6 +35,7 @@ export const deleteLogbookEntry = async (id) => {
   } catch (error) {
     const message =
       error.response?.data?.message ||
+      error.response?.data?.massage ||
       error.response?.data?.error ||
       "Gagal menghapus data logbook. Silakan coba lagi.";
     return { success: false, message };
@@ -53,6 +55,7 @@ export const clearAllLogbooks = async () => {
   } catch (error) {
     const message =
       error.response?.data?.message ||
+      error.response?.data?.massage ||
       error.response?.data?.error ||
       "Gagal menghapus semua data logbook.";
     return { success: false, message };
@@ -72,6 +75,7 @@ export const clearAllSchedules = async () => {
   } catch (error) {
     const message =
       error.response?.data?.message ||
+      error.response?.data?.massage ||
       error.response?.data?.error ||
       "Gagal menghapus semua data jadwal.";
     return { success: false, message };
@@ -92,6 +96,7 @@ export const getHistoryLogbooks = async () => {
   } catch (error) {
     const message =
       error.response?.data?.message ||
+      error.response?.data?.massage ||
       error.response?.data?.error ||
       "Gagal memuat riwayat logbook.";
     return { success: false, message };
@@ -112,6 +117,7 @@ export const getHistorySchedules = async () => {
   } catch (error) {
     const message =
       error.response?.data?.message ||
+      error.response?.data?.massage ||
       error.response?.data?.error ||
       "Gagal memuat riwayat jadwal.";
     return { success: false, message };
@@ -129,6 +135,7 @@ export const postHistoryLogbook = async (payload) => {
   } catch (error) {
     const message =
       error.response?.data?.message ||
+      error.response?.data?.massage ||
       error.response?.data?.error ||
       "Gagal menambah riwayat logbook.";
     return { success: false, message };
@@ -146,6 +153,7 @@ export const postHistorySchedule = async (payload) => {
   } catch (error) {
     const message =
       error.response?.data?.message ||
+      error.response?.data?.massage ||
       error.response?.data?.error ||
       "Gagal menambah riwayat jadwal.";
     return { success: false, message };
