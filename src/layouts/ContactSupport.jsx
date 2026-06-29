@@ -42,13 +42,13 @@ export default function ContactSupport() {
             </div>
           </a>
           <a 
-            href="mailto:lab.matisi@uin.ac.id" 
+            href="mailto:plt@uinjkt.ac.id" 
             className="p-4 bg-white border border-gray-100 rounded-xl flex items-center gap-3 hover:border-blue-200 hover:shadow-xs transition duration-200 cursor-pointer block"
           >
             <div className="p-3 bg-blue-50 text-blue-600 rounded-xl text-xl">📧</div>
             <div>
               <p className="text-xs text-gray-400 font-semibold uppercase">Email Resmi</p>
-              <p className="text-sm font-bold text-gray-700">lab.matisi@uin.ac.id</p>
+              <p className="text-sm font-bold text-gray-700">plt@uinjkt.ac.id</p>
             </div>
           </a>
         </div>
@@ -61,7 +61,7 @@ export default function ContactSupport() {
             </div>
             <h4 className="font-bold text-gray-800 text-lg mb-1">Pesan Berhasil Dikirim!</h4>
             <p className="text-gray-500 text-sm max-w-sm mb-6 leading-relaxed">
-              Terima kasih, <strong>{name}</strong>. Pesan Anda telah terkirim ke sistem kami. Tim admin Lab MaTiSi akan segera memproses pesan Anda.
+              Terima kasih, <strong>{name}</strong>. Pesan Anda telah terkirim ke sistem kami. Tim admin PLT akan segera memproses pesan Anda.
             </p>
             <button 
               onClick={handleReset}

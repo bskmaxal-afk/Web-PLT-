@@ -93,7 +93,7 @@ export default function HelpAndSupport() {
           </a>
 
           <a
-            href="mailto:lab.matisi@uin.ac.id"
+            href="mailto:plt@uinjkt.ac.id"
             className="p-4 bg-white border border-gray-100 rounded-xl flex items-center gap-3 hover:border-blue-200 hover:shadow-xs transition duration-200 cursor-pointer block"
           >
             <div className="p-3 bg-blue-50 text-blue-600 rounded-xl text-xl">
@@ -104,7 +104,7 @@ export default function HelpAndSupport() {
                 Email Resmi
               </p>
               <p className="text-sm font-bold text-gray-700">
-                lab.matisi@uin.ac.id
+                plt@uinjkt.ac.id
               </p>
             </div>
           </a>
@@ -118,7 +118,7 @@ export default function HelpAndSupport() {
                 Lokasi
               </p>
               <p className="text-sm font-bold text-gray-700">
-                Gedung Lab MaTiSi, Lt. 2-3
+                Gedung PLT UIN Jakarta, Lt. 1-4
               </p>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function HelpAndSupport() {
             </h4>
             <p className="text-gray-500 text-sm max-w-sm mb-6 leading-relaxed">
               Terima kasih, <strong>{name}</strong>. Pesan Anda telah terkirim ke
-              sistem kami. Tim admin Lab MaTiSi akan segera memproses pesan Anda.
+              sistem kami. Tim admin PLT akan segera memproses pesan Anda.
             </p>
             <button
               onClick={handleResetForm}

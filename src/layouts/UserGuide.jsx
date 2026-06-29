@@ -11,7 +11,7 @@ export default function UserGuide() {
     <div className="p-6 max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100">
       <div className="mb-8 text-center">
         <h2 className="text-2xl font-bold text-gray-800">Alur Prosedur Peminjaman</h2>
-        <p className="text-gray-500 text-sm">Ikuti 3 langkah mudah untuk menggunakan fasilitas Lab MaTiSi</p>
+        <p className="text-gray-500 text-sm">Ikuti 3 langkah mudah untuk menggunakan fasilitas PLT</p>
       </div>
 
       <div className="relative border-l-2 border-blue-100 ml-4 md:ml-6 space-y-8">

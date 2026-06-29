@@ -380,8 +380,13 @@ export const AppProvider = ({ children }) => {
    * @param {Array} rawLogbooks  - Array data logbook mentah dari backend (sudah JOIN)
    */
   const mergeAndUpdateSchedules = useCallback((rawSchedules, rawLogbooks) => {
-    const schedules = rawSchedules.map(mapBackendSchedule);
-    const logbooks = rawLogbooks.map(item => mapBackendLogbook(item, schedules));
+    const newLabNames = new Set(labs.map(l => l.name.toLowerCase()));
+    const schedules = rawSchedules
+      .map(mapBackendSchedule)
+      .filter(s => newLabNames.has(s.ruang.toLowerCase()));
+    const logbooks = rawLogbooks
+      .map(item => mapBackendLogbook(item, schedules))
+      .filter(lb => newLabNames.has(lb.ruang.toLowerCase()));
 
     // Gabungkan: logbook entries menimpa jadwal yang sudah di-booking.
     // Logbook yang ditolak (status = "ditolak") tidak memblokir jadwal, sehingga jadwal tersebut bisa dipesan kembali.
@@ -402,8 +407,13 @@ export const AppProvider = ({ children }) => {
    * Gabungkan (merge) data history schedules + logbooks menjadi myHistorySchedules.
    */
   const mergeAndUpdateHistorySchedules = useCallback((rawHistSchedules, rawHistLogbooks) => {
-    const schedules = rawHistSchedules.map(mapBackendSchedule);
-    const logbooks = rawHistLogbooks.map(item => mapBackendLogbook(item, schedules));
+    const newLabNames = new Set(labs.map(l => l.name.toLowerCase()));
+    const schedules = rawHistSchedules
+      .map(mapBackendSchedule)
+      .filter(s => newLabNames.has(s.ruang.toLowerCase()));
+    const logbooks = rawHistLogbooks
+      .map(item => mapBackendLogbook(item, schedules))
+      .filter(lb => newLabNames.has(lb.ruang.toLowerCase()));
 
     // Gabungkan untuk history: logbook entries menimpa jadwal yang sudah di-booking
     const bookedScheduleIds = new Set(

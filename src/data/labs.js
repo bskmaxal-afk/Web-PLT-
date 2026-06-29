@@ -1,18 +1,82 @@
 export const labs = [
-  { id: 2, name: "Lab Aplikasi 1", description: "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.", capacity: 36, status: "available", prodi: "Teknik Informatika", spek: "Core i7, 4GB RAM, Nvidia Quadro 600, DELL Optiplex 790", software: "VS Code, Android Studio, Docker" },
-  { id: 3, name: "Lab Aplikasi 2", description: "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.", capacity: 36, status: "available", prodi: "Teknik Informatika", spek: "Core i7, 4GB RAM, Nvidia Quadro 600, HP 280 G3 Mini Tower Businnes", software: "VS Code, IntelliJ, Postman" },
-  { id: 5, name: "Lab Aplikasi 3", description: "Laboratorium untuk praktikum pengembangan aplikasi dan implementasi teknologi perangkat lunak.", capacity: 36, status: "available", prodi: "Teknik Informatika", spek: "Core i7, 4GB RAM, Nvidia Quadro 600", software: "VS Code, IntelliJ, Postman" },
-  { id: 8, name: "Lab Data Sains", description: "Laboratorium untuk praktikum analisis data, machine learning, dan penelitian data sains.", capacity: 36, status: "available", prodi: "Matematika", spek: "Core i7, 32GB RAM, GPU Tesla", software: "Python, Jupyter, TensorFlow, R Studio" },
-  { id: 9, name: "Lab Jaringan Komputer", description: "Laboratorium untuk praktikum jaringan komputer, konfigurasi perangkat, dan administrasi jaringan.", capacity: 36, status: "available", prodi: "Teknik Informatika", spek: "Core i5, 4GB RAM, Intel HD Graphic 530(integrated) HP 280 G2 SFF", software: "Cisco Packet Tracer, Wireshark, GNS3" },
-  { id: 1, name: "Lab Matematika", description: "Laboratorium untuk praktikum dan penelitian matematika.", capacity: 36, status: "available", prodi: "Matematika", spek: "Core Intel Xeon , 8GB RAM, Nvidia Quadro 600, DELL Precision T1600", software: "MATLAB, SPSS, Maple, GeoGebra" },
-  { id: 11, name: "Lab Multi Media 1", description: "Laboratorium untuk praktikum desain grafis, editing multimedia, dan produksi konten digital.", capacity: 36, status: "available", prodi: "Teknik Informatika", spek: "Core INTEL XEON, 16GB RAM, Nvidia Quadro 600, DELL Precision T1600", software: "Adobe Creative Suite, DaVinci Resolve" },
-  { id: 12, name: "Lab Multi Media 2", description: "Laboratorium untuk praktikum desain grafis, editing multimedia, dan produksi konten digital.", capacity: 36, status: "available", prodi: "Teknik Informatika", spek: "Core INTEL XEON , 16GB RAM, Nvidia Quadro 600 , DELL Precision T1600", software: "Adobe Creative Suite, Blender, Unity" },
-  { id: 13, name: "Lab Programming", description: "Laboratorium untuk praktikum pemrograman, pengembangan aplikasi, dan rekayasa perangkat lunak.", capacity: 36, status: "available", prodi: "Teknik Informatika", spek: "Core i5, 4GB RAM, Nvidia GT730, HP 280 G3 Mini Tower Businnes", software: "VS Code, Git, Node.js, Java JDK" },
-  { id: 14, name: "Lab Sistem Digital", description: "Laboratorium untuk praktikum sistem digital, logika komputer, dan perancangan perangkat elektronik.", capacity: 36, status: "available", prodi: "Teknik Informatika", spek: "Core i5, 8GB RAM + Kit Digital", software: "Proteus, Quartus, Arduino IDE" },
-  { id: 15, name: "Lab Sistem Informasi", description: "Laboratorium untuk praktikum analisis sistem, pengelolaan data, dan pengembangan sistem informasi.", capacity: 36, status: "available", prodi: "Sistem Informasi", spek: "Core i5, 16GB RAM", software: "StarUML, MySQL Workbench, Tableau" },
-  { id: 16, name: "Ruang ELC", description: "Ruang untuk kegiatan pembelajaran, pelatihan, dan pengembangan kompetensi mahasiswa.", capacity: 36, status: "available", prodi: "Umum", spek: "Core i5, 8GB RAM, Proyektor", software: "Microsoft Office, Zoom, Google Meet" },
-  { id: 17, name: "Ruang Podcast", description: "Ruang untuk kegiatan rekaman audio, podcast, dan produksi konten digital.", capacity: 36, status: "available", prodi: "Umum", spek: "iMac, Audio Interface, Mic Condenser", software: "Audacity, GarageBand, OBS Studio" },
-  { id: 18, name: "Ruang Riset Sistem Operasi", description: "Ruang untuk kegiatan penelitian, diskusi akademik, dan pengembangan inovasi sistem operasi.", capacity: 36, status: "available", prodi: "Umum", spek: "Core INTEL XEON , 8GB RAM, Nvidia Quadro 600, DELL Precision T1600", software: "LaTeX, Mendeley, SPSS, NVivo" },
-  { id: 19, name: "Lab Komputasi", description: "Laboratorium untuk praktikum komputasi, pemodelan matematika, dan simulasi numerik.", capacity: 36, status: "available", prodi: "Umum", spek: "Core i5, 16GB RAM", software: "MATLAB, Python" }
-
+  { 
+    id: 1, 
+    name: "Lab Biologi Agraria", 
+    description: "Laboratorium untuk praktikum biokimia klinis, kultur mikroba, isolasi enzim, dan analisis biomolekul.", 
+    capacity: 30, 
+    status: "available", 
+    prodi: "Biologi", 
+    spek: "Mikroskop Binokuler Olympus, Autoklaf, Laminar Air Flow, Inkubator Shaker", 
+    software: "Geneious, BLAST, SPSS, ImageJ" 
+  },
+  { 
+    id: 2, 
+    name: "Lab Fisika Dasar & Material", 
+    description: "Laboratorium untuk praktikum fisika dasar, eksperimen mekanika, termodinamika, dan analisis material.", 
+    capacity: 36, 
+    status: "available", 
+    prodi: "Fisika", 
+    spek: "Set Percobaan Mekanika, Osiloskop Digital, Laser Helium-Neon, Spektrofotometer", 
+    software: "Logger Pro, Matlab, OriginPro, LabVIEW" 
+  },
+  { 
+    id: 3, 
+    name: "Lab Kimia Analitik & Lingkungan", 
+    description: "Laboratorium untuk pengujian kimia instrumen, analisis kuantitatif, dan pemantauan polutan lingkungan.", 
+    capacity: 30, 
+    status: "available", 
+    prodi: "Kimia", 
+    spek: "Spektrofotometer UV-Vis, Kromatografi Gas (GC), pH Meter Digital, Rotary Evaporator", 
+    software: "ChemDraw, SPSS, R-Studio" 
+  },
+  { 
+    id: 5, 
+    name: "Lab Komputasi Sains & Pemodelan", 
+    description: "Laboratorium untuk komputasi numerik, pemodelan matematika, dan simulasi sistem fisika/kimia rumit.", 
+    capacity: 40, 
+    status: "available", 
+    prodi: "Matematika", 
+    spek: "Workstation Intel Xeon, 32GB RAM, GPU Nvidia RTX 4070", 
+    software: "MATLAB, Python (Jupyter), Maple, Wolfram Mathematica" 
+  },
+  { 
+    id: 8, 
+    name: "Lab Elektronika & Robotika", 
+    description: "Laboratorium untuk perancangan rangkaian elektronik, mikrokontroler, IoT, dan sistem kontrol robotika.", 
+    capacity: 32, 
+    status: "available", 
+    prodi: "Teknik Elektro", 
+    spek: "Solder Station, Osciloskop Rigol, 3D Printer, Kit Arduino & Raspberry Pi", 
+    software: "Arduino IDE, Proteus, STM32CubeIDE, KiCad" 
+  },
+  { 
+    id: 9, 
+    name: "Lab Biokimia & Mikrobiologi", 
+    description: "Laboratorium untuk praktikum biokimia klinis, kultur mikroba, isolasi enzim, dan analisis biomolekul.", 
+    capacity: 25, 
+    status: "available", 
+    prodi: "Biologi", 
+    spek: "Sentrifuse Dingin, Spektrofotometer Mikroplate, Gel Doc, PCR Thermal Cycler", 
+    software: "MEGA, SnapGene, PyMOL" 
+  },
+  { 
+    id: 11, 
+    name: "Lab Geologi & Geofisika", 
+    description: "Laboratorium untuk analisis mineralogi, petrografi, pemetaan geologi, dan survei seismik.", 
+    capacity: 36, 
+    status: "available", 
+    prodi: "Teknik Geologi", 
+    spek: "Mikroskop Polarisasi, GPS Geodetik, Set Seismograf Portable", 
+    software: "ArcGIS, Surfer, Petrel, QGIS" 
+  },
+  { 
+    id: 12, 
+    name: "Lab Jaringan Komputer & Siber", 
+    description: "Laboratorium untuk simulasi jaringan skala luas, uji penetrasi sistem, dan pertahanan siber.", 
+    capacity: 36, 
+    status: "available", 
+    prodi: "Teknik Informatika", 
+    spek: "Rack Server Dell PowerEdge, Cisco Router & Switch Catalyst", 
+    software: "Wireshark, Kali Linux, Cisco Packet Tracer, GNS3" 
+  }
 ];

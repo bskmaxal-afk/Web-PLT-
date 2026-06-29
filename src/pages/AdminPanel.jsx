@@ -42,6 +42,26 @@ export default function AdminPanel() {
   // Tab state: "dashboard", "data-penggunaan", "laporan", "buat-jadwal"
   const [activeTab, setActiveTab] = useState("dashboard");
 
+  // States untuk data riwayat backend
+  const [historySchedules, setHistorySchedules] = useState([]);
+  const [historyLogbooks, setHistoryLogbooks] = useState([]);
+
+  // Fetch riwayat data dari backend
+  const refreshHistoryData = async () => {
+    try {
+      const [histSchedRes, histLogRes] = await Promise.all([
+        getHistorySchedules(),
+        getHistoryLogbooks()
+      ]);
+      const rawHistSchedules = histSchedRes.success ? histSchedRes.data : [];
+      const rawHistLogbooks = histLogRes.success ? histLogRes.data : [];
+      setHistorySchedules(rawHistSchedules);
+      setHistoryLogbooks(rawHistLogbooks);
+    } catch (e) {
+      console.error("Gagal memuat data riwayat:", e);
+    }
+  };
+
   useEffect(() => {
     if (isAdminAuthenticated) {
       refreshHistoryData();
@@ -299,26 +319,6 @@ if (result.success) {
       setAdminAuthenticated(false);
       setMySchedules([]);
       setActiveTab("dashboard");
-    }
-  };
-
-  // States untuk data riwayat backend
-  const [historySchedules, setHistorySchedules] = useState([]);
-  const [historyLogbooks, setHistoryLogbooks] = useState([]);
-
-  // Fetch riwayat data dari backend
-  const refreshHistoryData = async () => {
-    try {
-      const [histSchedRes, histLogRes] = await Promise.all([
-        getHistorySchedules(),
-        getHistoryLogbooks()
-      ]);
-      const rawHistSchedules = histSchedRes.success ? histSchedRes.data : [];
-      const rawHistLogbooks = histLogRes.success ? histLogRes.data : [];
-      setHistorySchedules(rawHistSchedules);
-      setHistoryLogbooks(rawHistLogbooks);
-    } catch (e) {
-      console.error("Gagal memuat data riwayat:", e);
     }
   };
 
@@ -1072,32 +1072,78 @@ const handleSaveEdit = (e) => {
     });
 
     if (confirmation.isConfirmed) {
-      // Simpan logbook/jadwal terpilih ke history backend sebelum dihapus
-      for (const s of mySchedules) {
-        if (selectedLogIds.includes(s.id)) {
-          try {
-            if (s._type === "logbook" || s.status === "dipesan" || s.status === "diterima" || s.status === "selesai") {
-              const schedHistRes = await postHistorySchedule(formatSchedulePayload(s));
-              if (schedHistRes.success) {
-                await postHistoryLogbook(formatLogbookPayload(s));
-              }
-            } else {
-              await postHistorySchedule(formatSchedulePayload(s));
+      Swal.fire({
+        title: "Sedang menghapus...",
+        text: "Mohon tunggu sebentar.",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const selectedLogs = mySchedules.filter(s => selectedLogIds.includes(s.id));
+      
+      const deletePromises = selectedLogs.map(async (s) => {
+        // 1. Simpan ke riwayat backend sebelum dihapus
+        try {
+          if (s._type === "logbook" || s.status === "dipesan" || s.status === "diterima" || s.status === "selesai") {
+            const schedHistRes = await postHistorySchedule(formatSchedulePayload(s));
+            if (schedHistRes.success) {
+              await postHistoryLogbook(formatLogbookPayload(s));
             }
-          } catch (histErr) {
-            console.error("Gagal mencatat riwayat bulk delete:", histErr);
+          } else {
+            await postHistorySchedule(formatSchedulePayload(s));
+          }
+        } catch (histErr) {
+          console.error("Gagal mencatat riwayat bulk delete:", histErr);
+        }
+
+        // 2. Hapus dari database backend jika ada _backendId
+        if (s._backendId) {
+          try {
+            const result = (s._type === "logbook" || s.status === "dipesan" || s.status === "diterima" || s.status === "selesai")
+              ? await deleteLogbookEntry(s._backendId)
+              : await deleteEntry(s._backendId);
+            return { id: s.id, success: result.success, message: result.message };
+          } catch (err) {
+            return { id: s.id, success: false, message: err.message || "Koneksi bermasalah" };
           }
         }
-      }
-      setMySchedules(mySchedules.filter(s => !selectedLogIds.includes(s.id)));
-      setSelectedLogIds([]);
-      await refreshHistoryData();
-      Swal.fire({
-        icon: "success",
-        title: "Berhasil",
-        text: "✅ Berhasil menghapus log terpilih.",
-        confirmButtonColor: "#3b82f6"
+        return { id: s.id, success: true };
       });
+
+      const deleteResults = await Promise.all(deletePromises);
+      const failed = deleteResults.filter(r => !r.success);
+      const succeededCount = deleteResults.length - failed.length;
+
+      // Filter local state based on successfully deleted items
+      const successfullyDeletedIds = deleteResults.filter(r => r.success).map(r => r.id);
+      setMySchedules(mySchedules.filter(s => !successfullyDeletedIds.includes(s.id)));
+      setSelectedLogIds(prev => prev.filter(id => !successfullyDeletedIds.includes(id)));
+
+      try {
+        await refreshData();
+        await refreshHistoryData();
+      } catch (refreshErr) {
+        console.error("Gagal memperbarui data setelah bulk delete:", refreshErr);
+      }
+
+      if (failed.length > 0) {
+        const errorMsg = failed.map(f => `ID ${f.id}: ${f.message}`).join(", ");
+        Swal.fire({
+          icon: "warning",
+          title: "Selesai dengan Catatan",
+          text: `Berhasil menghapus ${succeededCount} data terpilih. Gagal menghapus ${failed.length} data. Detail: ${errorMsg}`,
+          confirmButtonColor: "#3b82f6"
+        });
+      } else {
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil",
+          text: "✅ Berhasil menghapus seluruh data terpilih.",
+          confirmButtonColor: "#3b82f6"
+        });
+      }
     }
   };
 

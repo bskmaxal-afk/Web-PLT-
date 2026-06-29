@@ -2,7 +2,7 @@ import { useContext } from "react";
 import { NavLink } from "react-router-dom";
 import { LayoutDashboard, CalendarDays, Info, CircleHelp, Phone, Headphones, X, ShieldCheck } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
-import logoUIN from "../../assets/logoUIN.jpg";
+import logoUIN from "../../assets/logoUIN_new.png";
 
 const menus = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -26,9 +26,9 @@ const SidebarContent = ({ showCloseBtn = false, setSidebarOpen }) => {
             <img src={logoUIN} alt="UIN Logo" className="sidebar-logo" />
           </div>
           <div className="flex flex-col">
-            <h1 className="sidebar-title">Lab MaTiSi</h1>
+            <h1 className="sidebar-title">PLT UIN Jakarta</h1>
             <p className="sidebar-subtitle">
-              Laboratorium Komputer Prodi Matematika, Teknik Informatika dan Sistem Informasi
+              Pusat Laboratorium Terpadu UIN Syarif Hidayatullah Jakarta
             </p>
           </div>
         </div>

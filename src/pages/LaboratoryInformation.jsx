@@ -13,8 +13,12 @@ export default function LaboratoryInformation() {
   const prodiColors = {
     "Teknik Informatika": "bg-blue-50 text-blue-600",
     Matematika: "bg-emerald-50 text-emerald-600",
-    "Sistem Informasi": "bg-purple-50 text-purple-600",
-    Umum: "bg-amber-50 text-amber-600",
+    Biologi: "bg-teal-50 text-teal-600",
+    Fisika: "bg-indigo-50 text-indigo-600",
+    Kimia: "bg-pink-50 text-pink-600",
+    "Teknik Elektro": "bg-orange-50 text-orange-600",
+    "Teknik Geologi": "bg-amber-50 text-amber-600",
+    Umum: "bg-slate-50 text-slate-600",
   };
 
   return (
@@ -25,7 +29,7 @@ export default function LaboratoryInformation() {
         </h2>
         <p className="text-gray-400 text-xs font-medium mt-1">
           Detail kapasitas, spesifikasi hardware, dan software pendukung
-          praktikum untuk seluruh fasilitas Lab MaTiSi.
+          praktikum untuk seluruh fasilitas PLT.
         </p>
       </div>
 

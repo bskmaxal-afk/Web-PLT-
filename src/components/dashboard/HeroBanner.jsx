@@ -1,13 +1,13 @@
 import { Share2, DoorOpen, Users, ThumbsUp } from "lucide-react";
 import heroImg from "../../assets/hero.png";
-import logoUIN from "../../assets/logoUIN.jpg";
+import logoUIN from "../../assets/logoUIN_new.png";
 import Swal from "sweetalert2"; 
 
 export default function HeroBanner() {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'Lab MaTiSi',
+        title: 'PLT UIN Jakarta',
         text: 'Akses berbagai ruang laboratorium untuk mendukung kegiatan praktikum, penelitian, dan pembelajaran Anda.',
         url: window.location.href,
       }).catch(console.error);
@@ -47,10 +47,10 @@ Swal.fire({
         {/* Text Contents */}
         <div className="hero-content">
           <h2 className="hero-title">
-            Lab MaTiSi
+            PLT UIN Jakarta
           </h2>
           <h3 className="hero-subtitle">
-            Laboratorium Komputer dan Fasilitas Lainnya
+            Pusat Laboratorium Terpadu
           </h3>
           <p className="hero-description">
             Akses berbagai ruang laboratorium untuk mendukung kegiatan praktikum, penelitian, dan pembelajaran Anda dengan fasilitas terbaik.
@@ -73,7 +73,7 @@ Swal.fire({
             <DoorOpen size={20} />
           </div>
           <div className="text-left">
-            <div className="hero-stat-value">17</div>
+            <div className="hero-stat-value">8</div>
             <div className="hero-stat-label">Total Ruang</div>
           </div>
         </div>

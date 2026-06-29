@@ -10,14 +10,15 @@ import LaboratoryInformation from "./pages/LaboratoryInformation";
 import UsageGuide from "./pages/UsageGuide";
 import HelpAndSupport from "./pages/HelpAndSupport";
 import AdminPanel from "./pages/AdminPanel";
+import LandingPage from "./pages/LandingPage";
 
 function App() {
   return (
     <AppProvider>
       <Router>
         <Routes>
-          {/* Redirect root to dashboard */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* Render Landing Page on root */}
+          <Route path="/" element={<LandingPage />} />
 
           {/* Dashboard Pages (Wrapped in DashboardLayout) */}
           <Route

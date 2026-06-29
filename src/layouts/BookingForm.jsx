@@ -4,7 +4,7 @@ import { AppContext } from '../context/AppContext';
 import Swal from "sweetalert2";
 export default function BookingForm() {
   const navigate = useNavigate();
-  const { mySchedules, setMySchedules } = useContext(AppContext);
+  const { mySchedules, setMySchedules, laboratories } = useContext(AppContext);
 
   const [formData, setFormData] = useState({
     ruang: '',
@@ -68,11 +68,9 @@ export default function BookingForm() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Pilih Laboratorium</label>
             <select name="ruang" onChange={handleChange} required className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50">
               <option value="">-- Pilih Ruang --</option>
-              <option value="Lab Matematika">Lab Matematika</option>
-              <option value="Lab Aplikasi 1">Lab Aplikasi 1</option>
-              <option value="Lab Aplikasi 2">Lab Aplikasi 2</option>
-              <option value="Lab Multimedia 1">Lab Multimedia 1</option>
-              <option value="Lab Komputasi">Lab Komputasi</option>
+              {laboratories && laboratories.map((lab) => (
+                <option key={lab.id} value={lab.name}>{lab.name}</option>
+              ))}
             </select>
           </div>
 

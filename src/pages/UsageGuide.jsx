@@ -29,7 +29,7 @@ export default function UsageGuide() {
             Alur Prosedur Peminjaman
           </h2>
           <p className="text-gray-400 text-xs font-medium mt-1">
-            Ikuti langkah-langkah mudah untuk menggunakan fasilitas Lab MaTiSi
+            Ikuti langkah-langkah mudah untuk menggunakan fasilitas PLT
           </p>
         </div>
 

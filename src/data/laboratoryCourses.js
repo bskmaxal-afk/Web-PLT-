@@ -6,101 +6,88 @@
  * Value = array nama mata kuliah yang tersedia di lab tersebut.
  *
  * Laboratorium yang TIDAK tercantum di sini (atau memiliki array kosong)
- * dianggap tidak memiliki mata kuliah terjadwal, sehingga:
- *   - Dropdown mata kuliah di-disable
- *   - Validasi mata kuliah tidak dijalankan
- *
- * Untuk menambah / mengubah daftar mata kuliah, cukup edit file ini.
+ * dianggap tidak memiliki mata kuliah terjadwal.
  */
 export const laboratoryCourses = {
-  // ── Lab Aplikasi 1 (id: 2) ──────────────────────────────────
+  // ── Lab Biologi Agraria (id: 1) ───────────────────────────
+  1: [
+    "Bioteknologi Pertanian",
+    "Fisiologi Tumbuhan Lanjut",
+    "Genetika Tumbuhan",
+    "Mikrobiologi Agraria",
+    "Kultur Jaringan Tanaman",
+    "Ekologi Pertanian",
+  ],
+
+  // ── Lab Fisika Dasar & Material (id: 2) ───────────────────
   2: [
-    "Algoritma dan Struktur Data",
-    "Tata Kelola Teknologi Informasi",
-    "Sistem Informasi Perbankan Syariah",
-    "Etika Profesi Teknologi Informasi",
-    "Proyek Minor Sistem Informasi",
-    "Gudang Data dan Kecerdasan Bisnis",
-    "Computer Vision",
+    "Fisika Dasar I",
+    "Fisika Dasar II",
+    "Fisika Eksperimen",
+    "Termodinamika Lanjut",
+    "Karakterisasi Material",
+    "Fisika Zat Padat",
+    "Mekanika Analitik",
   ],
 
-  // ── Lab Aplikasi 2 (id: 3) ──────────────────────────────────
+  // ── Lab Kimia Analitik & Lingkungan (id: 3) ───────────────
   3: [
-    "Rekayasa Perangkat Lunak",
-    "Interaksi Manusia dan Komputer",
-    "Sistem Enterprise",
-    "Tata Kelola Teknologi Informasi",
-    "Algoritma dan Struktur Data",
-    "Proyek Minor Sistem Informasi",
-    "Pendidikan Pancasila",
+    "Kimia Analitik Dasar",
+    "Kimia Lingkungan",
+    "Analisis Instrumen",
+    "Pemisahan Kimia",
+    "Kimia Air & Udara",
+    "Spektroskopi Organik",
   ],
 
-  // ── Lab Aplikasi 3 (id: 5) ──────────────────────────────────
+  // ── Lab Komputasi Sains & Pemodelan (id: 5) ───────────────
   5: [
-    "Rekayasa Perangkat Lunak",
-    "Algoritma dan Struktur Data",
-    "Pemrograman Berorientasi Objek"
+    "Metode Numerik",
+    "Pemodelan Matematika",
+    "Analisis Data Sains",
+    "Optimasi Numerik",
+    "Persamaan Diferensial",
+    "Komputasi Aljabar",
   ],
 
-  // ── Lab Data Sains (id: 8) ──────────────────────────────────
+  // ── Lab Elektronika & Robotika (id: 8) ────────────────────
   8: [
-    "Natural Language Processing",
-    "Statistika Elementer",
-    "High Performance Computing",
-    "Algoritma dan Struktur Data",
-    "Metode Optimasi",
+    "Mikrokontroler & IoT",
+    "Sistem Kontrol Analog",
+    "Perancangan Robotika",
+    "Elektronika Daya",
+    "Sensor & Aktuator",
+    "Sistem Tertanam (Embedded)",
   ],
 
-  // ── Lab Jaringan Komputer (id: 9) ───────────────────────────
+  // ── Lab Biokimia & Mikrobiologi (id: 9) ───────────────────
   9: [
-    "Digital Forensic (A)",
-    "Internet of Things (IoT)",
-    "Digital Forensic (B)",
-    "Infrastruktur Teknologi Informasi",
+    "Biokimia Klinik",
+    "Mikrobiologi Medis",
+    "Teknologi Enzim",
+    "Rekayasa Genetika",
+    "Metabolisme Biomolekul",
+    "Imunologi Dasar",
   ],
 
-  // ── Lab Multi Media 1 (id: 11) ──────────────────────────────
+  // ── Lab Geologi & Geofisika (id: 11) ─────────────────────
   11: [
-    "Algoritma dan Struktur Data",
-    "Analisis dan Perancangan Sistem Informasi",
-    "Rekayasa Perangkat Lunak",
-    "Sistem Basis Data Spesial",
-    "Konsep Sistem Informasi",
+    "Petrologi & Mineralogi",
+    "Geologi Struktur",
+    "Interpretasi Seismik",
+    "Sistem Informasi Geografis",
+    "Geofisika Eksplorasi",
+    "Paleontologi Analitik",
   ],
 
-  // ── Lab Multi Media 2 (id: 12) ──────────────────────────────
+  // ── Lab Jaringan Komputer & Siber (id: 12) ───────────────
   12: [
-    "Proyek Minor Sistem Informasi",
-    "Interaksi Manusia dan Komputer",
-    "Rekayasa Perangkat Lunak",
-    "Konsep Sistem Informasi",
-    "Tata Kelola Teknologi Informasi",
-  ],
-
-  // ── Lab Programming (id: 13) ────────────────────────────────
-  13: [
-    "Kapita Selekta",
-    "Kecerdasan Komputasional",
-    "Kriptografi (A)",
-    "Proyek Perangkat Lunak",
-    "Pemrograman Lanjut",
-    "Software Process",
-    "Kriptografi (B)",
-  ],
-
-  // ── Lab Sistem Digital (id: 14) ─────────────────────────────
-  14: [
-    "Robotik (B)",
-    "Sistem Digital",
-    "Robotik (A)",
-  ],
-
-  // ── Ruang Riset Sistem Operasi (id: 18) ─────────────────────
-  18: [
-    "Sistem Operasi",
-    "Pemrograman Lanjut",
-    "Big Data",
-    "Data Science",
+    "Administrasi Jaringan",
+    "Keamanan Informasi",
+    "Kriptografi Praktis",
+    "Ethical Hacking",
+    "Analisis Forensik Digital",
+    "Arsitektur Jaringan Enterprise",
   ],
 };
 

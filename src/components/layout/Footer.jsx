@@ -1,5 +1,5 @@
 import { Mail } from "lucide-react";
-import logoUIN from "../../assets/logoUIN.jpg";
+import logoUIN from "../../assets/logoUIN_new.png";
 
 export default function Footer() {
   return (
@@ -10,14 +10,14 @@ export default function Footer() {
           <img src={logoUIN} alt="UIN Logo" className="footer-logo" />
         </div>
         <div className="footer-brand-info">
-          <h4 className="footer-brand-title">Lab MaTiSi</h4>
-          <p className="footer-brand-subtitle">Laboratorium Komputer dan Fasilitas Lainnya</p>
+          <h4 className="footer-brand-title">PLT UIN Jakarta</h4>
+          <p className="footer-brand-subtitle">Pusat Laboratorium Terpadu</p>
         </div>
       </div>
 
       {/* Center: Copyright */}
       <div className="footer-copyright">
-        © 2025 Lab MaTiSi - All rights reserved.
+        © 2026 PLT UIN Jakarta - All rights reserved.
       </div>
 
       {/* Right: Social Media */}
