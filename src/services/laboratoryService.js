@@ -1,15 +1,58 @@
-
-import { labs as localLabs } from "../data/labs";
+import API from "./api";
+import { labs as fallbackLabs } from "../data/labs";
 
 /**
- * Fetch daftar laboratorium.
+ * Fetch daftar laboratorium dari backend.
+ * GET /get/lab
  *
- * Selalu menggunakan data statis dari labs.js sebagai sumber utama (source of truth).
- * Backend tidak lagi menentukan daftar laboratorium yang ditampilkan di frontend,
- * karena daftar lab telah diperbarui ke Lab Sains & Teknologi.
+ * Response format:
+ * {
+ *   "message": [
+ *     { "id_lab": 1, "nama_lab": "LAB MATEMATIKA", "jenis_lab": "IT", "kapasitas": 40 },
+ *     ...
+ *   ],
+ *   "status": 200,
+ *   "token": "none"
+ * }
+ *
+ * Jika fetch gagal, fallback ke data statis di labs.js.
  *
  * @returns {Promise<Array>} Daftar laboratorium
  */
 export const getLabs = async () => {
-  return localLabs;
+  try {
+    const response = await API.get("/get/lab");
+    const data = response.data;
+
+    if (data && data.message && Array.isArray(data.message)) {
+      return data.message.map((item) => {
+        // Cari data fallback untuk field tambahan (description, spek, software, dll.)
+        const fallback = fallbackLabs.find(
+          (fb) => fb.id === item.id_lab || fb.name.toLowerCase() === item.nama_lab.toLowerCase()
+        );
+
+        return {
+          id: item.id_lab,
+          name: fallback?.name || item.nama_lab,
+          description: fallback?.description || `Laboratorium ${item.nama_lab}`,
+          capacity: item.kapasitas || fallback?.capacity || 36,
+          status: fallback?.status || "available",
+          prodi: fallback?.prodi || item.jenis_lab || "Umum",
+          spek: fallback?.spek || "-",
+          software: fallback?.software || "-",
+          icon: fallback?.icon || "Computer",
+          colorClass: fallback?.colorClass || "bg-blue-500",
+          textClass: fallback?.textClass || "text-blue-600",
+          borderClass: fallback?.borderClass || "border-blue-500/20 hover:border-blue-500",
+          hoverBtnClass: fallback?.hoverBtnClass || "hover:bg-blue-500 hover:text-white",
+        };
+      });
+    }
+
+    console.warn("Format response /get/lab tidak sesuai, menggunakan data statis.");
+    return fallbackLabs;
+  } catch (error) {
+    console.error("Gagal fetch lab dari backend, menggunakan data statis:", error);
+    return fallbackLabs;
+  }
 };

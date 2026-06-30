@@ -1,4 +1,4 @@
-import { useState, useContext, useMemo, useEffect } from "react";
+import { useState, useContext, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { submitBooking } from "../services/bookingService";
@@ -52,29 +52,78 @@ export default function LaboratoryBookingForm() {
     refreshData();
   }, [refreshData]);
 
+  // Helper: map lab prodi/jenisLab to rumpun
+  const getRumpun = useCallback((lab) => {
+    if (!lab) return "UMUM";
+    const p = (lab.prodi || "").toLowerCase();
+    const j = (lab.jenisLab || "").toLowerCase();
+    if (p.includes("informatika") || p.includes("sistem informasi") || p.includes("matematika") || p.includes("data sains") || j.includes("it")) {
+      return "IT";
+    }
+    if (p.includes("biologi") || j.includes("biologi")) {
+      return "BIOLOGI";
+    }
+    if (p.includes("fisika") || p.includes("elektro") || j.includes("fisika")) {
+      return "FISIKA";
+    }
+    if (p.includes("kimia") || j.includes("kimia")) {
+      return "KIMIA";
+    }
+    return "UMUM";
+  }, []);
+
   // Pre-fill lab name from dashboard click
   const preselectedLabName = selectedLaboratory?.name || "";
+
+  // Auto-detect rumpun of preselected lab
+  const initialRumpun = useMemo(() => {
+    if (!preselectedLabName || !laboratories) return "";
+    const matched = laboratories.find(l => l && l.name && l.name.toLowerCase() === preselectedLabName.toLowerCase());
+    return matched ? getRumpun(matched) : "";
+  }, [preselectedLabName, laboratories, getRumpun]);
 
   // Show empty, pending, and approved schedules
   const availableSchedules = mySchedules.filter(
     (s) => s.status === "kosong" || s.status === "dipesan" || s.status === "diterima"
   );
 
-  // Search & filter state — pre-fill filterRuang if came from lab card
+  // Search & filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [filterHari, setFilterHari] = useState("");
+  const [filterRumpun, setFilterRumpun] = useState(initialRumpun || "FISIKA");
   const [filterRuang, setFilterRuang] = useState(preselectedLabName);
+
+  // Sync initialRumpun if selectedLaboratory changes
+  useEffect(() => {
+    if (preselectedLabName && laboratories) {
+      setFilterRuang(preselectedLabName);
+      if (initialRumpun) {
+        setFilterRumpun(initialRumpun);
+      }
+    }
+  }, [preselectedLabName, laboratories, initialRumpun]);
+
+  // Reset filterRuang if selected filterRumpun conflicts with it
+  useEffect(() => {
+    if (filterRumpun && filterRuang && laboratories) {
+      const matched = laboratories.find(l => l && l.name && l.name.toLowerCase() === filterRuang.toLowerCase());
+      if (matched && getRumpun(matched) !== filterRumpun) {
+        setFilterRuang("");
+      }
+    }
+  }, [filterRumpun, filterRuang, laboratories, getRumpun]);
 
   // Unique list of hari for filter dropdown
   const uniqueHari = [...new Set(availableSchedules.map((s) => s.hari))].filter(Boolean);
 
-  // Get all laboratory names from context to display all labs in the select dropdown
+  // Filtered list of labs for select dropdown
   const uniqueRuang = useMemo(() => {
-    if (laboratories && laboratories.length > 0) {
-      return laboratories.map((l) => l.name);
+    let list = laboratories || [];
+    if (filterRumpun) {
+      list = list.filter(l => l && getRumpun(l) === filterRumpun);
     }
-    return [...new Set(availableSchedules.map((s) => s.ruang))].filter(Boolean);
-  }, [laboratories, availableSchedules]);
+    return list.map(l => l?.name || "").filter(Boolean);
+  }, [laboratories, filterRumpun, getRumpun]);
 
   // Apply search & filters
   const filteredSchedules = availableSchedules.filter((s) => {
@@ -88,7 +137,11 @@ export default function LaboratoryBookingForm() {
       s.kelas?.toLowerCase().includes(q);
     const matchHari = !filterHari || s.hari === filterHari;
     const matchRuang = !filterRuang || s.ruang?.toLowerCase() === filterRuang.toLowerCase();
-    return matchSearch && matchHari && matchRuang;
+    const matchRumpun = !filterRumpun || (() => {
+      const matchedLab = laboratories?.find(l => l && l.name && s.ruang && l.name.toLowerCase() === s.ruang.toLowerCase());
+      return matchedLab && getRumpun(matchedLab) === filterRumpun;
+    })();
+    return matchSearch && matchHari && matchRuang && matchRumpun;
   });
 
   const hasActiveFilter = searchQuery || filterHari || filterRuang;
@@ -96,6 +149,7 @@ export default function LaboratoryBookingForm() {
   const clearFilters = () => {
     setSearchQuery("");
     setFilterHari("");
+    setFilterRumpun(initialRumpun || "FISIKA");
     setFilterRuang("");
   };
 
@@ -370,6 +424,11 @@ export default function LaboratoryBookingForm() {
                           <option key={h} value={h}>{h}</option>
                         ))}
                       </select>
+                    </div>
+
+                    {/* Rumpun Info Badge */}
+                    <div className="flex items-center justify-center px-3.5 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-xs font-bold select-none shrink-0">
+                      Rumpun: {filterRumpun}
                     </div>
 
                     {/* Filter Ruang/Lab */}

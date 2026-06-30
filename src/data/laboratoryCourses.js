@@ -75,8 +75,8 @@ export const laboratoryCourses = {
     "Pemrograman Sistem Tertanam",
   ],
 
-  // ── Laboratorium Fisika Material & Komputasi (id: 13) ───────────────
-  13: [
+  // ── Laboratorium Fisika Material & Komputasi (id: 32) ───────────────
+  32: [
     "Fisika Material Komputasi",
     "Simulasi Dinamika Molekuler",
     "Fisika Zat Padat Lanjut",

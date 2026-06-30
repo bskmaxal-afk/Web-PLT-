@@ -11,6 +11,13 @@ import UsageGuide from "./pages/UsageGuide";
 import HelpAndSupport from "./pages/HelpAndSupport";
 import AdminPanel from "./pages/AdminPanel";
 import LandingPage from "./pages/LandingPage";
+import FisikaDashboard from "./pages/Fisika/FisikaDashboard";
+import KimiaDashboard from "./pages/Kimia/KimiaDashboard";
+import BiologiDashboard from "./pages/Biologi/BiologiDashboard";
+import AgribisnisDashboard from "./pages/Agribisnis/AgribisnisDashboard";
+import TambangDashboard from "./pages/Tambang/TambangDashboard";
+import PanganDashboard from "./pages/Pangan/PanganDashboard";
+import LingkunganDashboard from "./pages/Lingkungan/LingkunganDashboard";
 
 function App() {
   return (
@@ -20,15 +27,52 @@ function App() {
           {/* Render Landing Page on root */}
           <Route path="/" element={<LandingPage />} />
 
-          {/* Dashboard Pages (Wrapped in DashboardLayout) */}
+          {/* Fisika Custom Dashboard */}
+          <Route
+            path="/fisika"
+            element={<FisikaDashboard />}
+          />
+
+          {/* Kimia Custom Dashboard */}
+          <Route
+            path="/kimia"
+            element={<KimiaDashboard />}
+          />
+
+          {/* Biologi Custom Dashboard */}
+          <Route
+            path="/biologi"
+            element={<BiologiDashboard />}
+          />
+
+          {/* Agribisnis Custom Dashboard */}
+          <Route
+            path="/agribisnis"
+            element={<AgribisnisDashboard />}
+          />
+
+          {/* Tambang Custom Dashboard */}
+          <Route
+            path="/tambang"
+            element={<TambangDashboard />}
+          />
+
+          {/* Pangan Custom Dashboard */}
+          <Route
+            path="/pangan"
+            element={<PanganDashboard />}
+          />
+
+          {/* Lingkungan Custom Dashboard */}
+          <Route
+            path="/lingkungan"
+            element={<LingkunganDashboard />}
+          />
+
+          {/* Dashboard Pages */}
           <Route
             path="/dashboard"
-            element={
-              <DashboardLayout>
-                <HeroBanner />
-                <LaboratoryGrid />
-              </DashboardLayout>
-            }
+            element={<KimiaDashboard />}
           />
           <Route
             path="/booking"

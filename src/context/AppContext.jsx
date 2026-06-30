@@ -64,22 +64,29 @@ const mapBackendSchedule = (item) => {
   const jamSelesai = item.jam_selesai || item.jamselesai || item.jamselesainya || "";
   const jam = jamMulai && jamSelesai ? `${jamMulai} - ${jamSelesai}` : item.jam || "-";
 
-  // Ambil nama lab dari relasi atau fallback
+  // Ambil ID lab dari relasi atau fallback
+  const labId = item.id_lab || item.lab_id || item.labId || item.idLab || item.labnya || item.namalab || null;
+  let matchedLab = null;
+  if (labId) {
+    matchedLab = labs.find(l => l.id === labId || l.id === parseInt(labId, 10));
+  }
+
   let ruang = "Lab Umum";
-  const rawRuang = item.nama_lab || item.namaLab || "";
-  if (rawRuang) {
-    const matchedLab = labs.find(l => l.name.toLowerCase() === rawRuang.toLowerCase());
-    ruang = matchedLab ? matchedLab.name : titleCase(rawRuang);
-  } else if (item.laboratorium) {
-    ruang = item.laboratorium.nama || item.laboratorium.name || item.laboratorium.namaLab || "Lab Umum";
-  } else if (item.lab) {
-    ruang = typeof item.lab === "string" ? item.lab : (item.lab.nama || item.lab.name || "Lab Umum");
-  } else if (item.ruang) {
-    ruang = item.ruang;
-  } else if (item.namalab || item.id_lab) {
-    const labId = item.namalab || item.id_lab;
-    const matchedLab = labs.find(l => l.id === labId || l.id === parseInt(labId, 10));
-    ruang = matchedLab ? matchedLab.name : `Lab ID-${labId}`;
+  if (matchedLab) {
+    ruang = matchedLab.name;
+  } else {
+    // Fallback ke lookup nama atau field lainnya jika tidak ketemu berdasarkan ID
+    const rawRuang = item.nama_lab || item.namaLab || "";
+    if (rawRuang) {
+      const matchedByName = labs.find(l => l.name.toLowerCase() === rawRuang.toLowerCase());
+      ruang = matchedByName ? matchedByName.name : titleCase(rawRuang);
+    } else if (item.laboratorium) {
+      ruang = item.laboratorium.nama || item.laboratorium.name || item.laboratorium.namaLab || "Lab Umum";
+    } else if (item.lab) {
+      ruang = typeof item.lab === "string" ? item.lab : (item.lab.nama || item.lab.name || "Lab Umum");
+    } else if (item.ruang) {
+      ruang = item.ruang;
+    }
   }
 
   // Ambil prodi dan kelas
@@ -204,16 +211,30 @@ const mapBackendLogbook = (item, schedules = []) => {
   }
 
   // Nama ruang / lab
+  const labId = item.id_lab || item.lab_id || item.labId || item.idLab || item.labnya || item.namalab ||
+                sched?.id_lab || sched?.lab_id || sched?.labId || sched?.idLab || sched?.namalab || null;
+  let matchedLab = null;
+  if (labId) {
+    matchedLab = labs.find(l => l.id === labId || l.id === parseInt(labId, 10));
+  }
+
   let ruang = "Lab Umum";
-  const rawRuang = item.nama_lab || item.namaLab || 
-                    (!isAlreadyMapped ? (sched.nama_lab || sched.namaLab || sched.ruang || "") : sched.ruang);
-  if (rawRuang) {
-    const matchedLab = labs.find(l => l.name.toLowerCase() === rawRuang.toLowerCase());
-    ruang = matchedLab ? matchedLab.name : titleCase(rawRuang);
-  } else if (!isAlreadyMapped) {
-    const labObj = sched.laboratorium || sched.lab || item.laboratorium || item.lab;
-    if (labObj) {
-      ruang = typeof labObj === "string" ? labObj : (labObj.nama || labObj.name || labObj.namaLab || "Lab Umum");
+  if (matchedLab) {
+    ruang = matchedLab.name;
+  } else {
+    // Fallback ke lookup nama atau field lainnya jika tidak ketemu berdasarkan ID
+    const rawRuang = item.nama_lab || item.namaLab || 
+                      (!isAlreadyMapped ? (sched.nama_lab || sched.namaLab || sched.ruang || "") : sched.ruang);
+    if (rawRuang) {
+      const matchedByName = labs.find(l => l.name.toLowerCase() === rawRuang.toLowerCase());
+      ruang = matchedByName ? matchedByName.name : titleCase(rawRuang);
+    } else if (!isAlreadyMapped) {
+      const labObj = sched.laboratorium || sched.lab || item.laboratorium || item.lab;
+      if (labObj) {
+        ruang = typeof labObj === "string" ? labObj : (labObj.nama || labObj.name || labObj.namaLab || "Lab Umum");
+      } else if (sched.ruang) {
+        ruang = sched.ruang;
+      }
     } else if (sched.ruang) {
       ruang = sched.ruang;
     }

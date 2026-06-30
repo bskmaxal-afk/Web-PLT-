@@ -7,7 +7,7 @@ export default function HeroBanner() {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'PLT UIN Jakarta',
+        title: 'FISIKA UIN Jakarta',
         text: 'Akses berbagai ruang laboratorium untuk mendukung kegiatan praktikum, penelitian, dan pembelajaran Anda.',
         url: window.location.href,
       }).catch(console.error);
