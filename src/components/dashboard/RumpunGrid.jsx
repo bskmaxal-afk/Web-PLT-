@@ -17,7 +17,7 @@ import { AppContext } from "../../context/AppContext";
  * Features dynamic distribution badges, prodi pills, progress indicators, and rich visual interactive cues.
  */
 export default function RumpunGrid() {
-  const { laboratories } = useContext(AppContext);
+  const { laboratories, searchQuery } = useContext(AppContext);
 
   // Dynamic laboratory count helper
   const getLabCount = (rumpunId) => {
@@ -233,6 +233,18 @@ export default function RumpunGrid() {
     );
   };
 
+  const filteredRumpuns = rumpunData.filter((rumpun) => {
+    const query = (searchQuery || "").toLowerCase().trim();
+    if (!query) return true;
+
+    return (
+      rumpun.name.toLowerCase().includes(query) ||
+      rumpun.fullName.toLowerCase().includes(query) ||
+      rumpun.description.toLowerCase().includes(query) ||
+      rumpun.prodis.some(p => p.toLowerCase().includes(query))
+    );
+  });
+
   return (
     <section className="mt-14 px-8 flex flex-col items-center">
       {/* Header Info */}
@@ -250,7 +262,13 @@ export default function RumpunGrid() {
 
       {/* Rumpun Cards Grid */}
       <div className="flex flex-wrap justify-center gap-6 w-full max-w-5xl mb-6">
-        {rumpunData.map((rumpun) => renderCard(rumpun))}
+        {filteredRumpuns.length > 0 ? (
+          filteredRumpuns.map((rumpun) => renderCard(rumpun))
+        ) : (
+          <div className="text-center py-12 w-full animate-fade-in-up">
+            <p className="text-sm font-semibold text-slate-400">Tidak ada rumpun keilmuan atau program studi yang cocok.</p>
+          </div>
+        )}
       </div>
     </section>
   );

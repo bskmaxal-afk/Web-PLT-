@@ -9,7 +9,7 @@ import Swal from "sweetalert2";
  * Features glassmorphic cards, gradient texts, dynamic stats, and a clean search-bar mockup.
  */
 export default function HeroBanner() {
-  const { laboratories } = useContext(AppContext);
+  const { laboratories, searchQuery, setSearchQuery } = useContext(AppContext);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -84,16 +84,17 @@ export default function HeroBanner() {
             Gerbang utama integrasi rumpun keilmuan fakultas. Jelajahi spesifikasi teknis ruangan, profil laboratorium, dan hubungkan langsung dengan dashboard spesifik rumpun Anda.
           </p>
 
-          {/* Premium Search Mockup (Visual Enhancer) */}
+          {/* Premium Search Box */}
           <div className="max-w-md w-full relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-teal-500 rounded-2xl blur-[4px] opacity-10 group-focus-within:opacity-20 transition duration-300"></div>
             <div className="relative flex items-center bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3 text-slate-400 shadow-inner">
               <Search size={16} className="text-slate-500 mr-3 shrink-0" />
               <input 
                 type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari rumpun, laboratorium, atau program studi..." 
-                className="w-full bg-transparent border-none text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-0 cursor-default"
-                disabled
+                className="w-full bg-transparent border-none text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-0"
               />
               <div className="hidden sm:flex items-center gap-1 bg-slate-800/80 border border-slate-700/50 px-2 py-0.5 rounded-lg text-[9px] font-bold text-slate-400 shrink-0">
                 <Command size={10} />

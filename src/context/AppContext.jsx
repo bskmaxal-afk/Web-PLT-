@@ -499,6 +499,7 @@ export const AppProvider = ({ children }) => {
   // Socket.IO Realtime Connection
   // ────────────────────────────────────────────────
   const [socketConnected, setSocketConnected] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     /**
@@ -573,6 +574,8 @@ export const AppProvider = ({ children }) => {
         refreshData,
         isDataLoading,
         socketConnected,
+        searchQuery,
+        setSearchQuery,
       }}
     >
       {children}
