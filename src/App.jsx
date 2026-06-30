@@ -2,14 +2,12 @@ import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { AppProvider } from "./context/AppContext";
 import DashboardLayout from "./layouts/DashboardLayout";
 import HeroBanner from "./components/dashboard/HeroBanner";
-import LaboratoryGrid from "./components/dashboard/LaboratoryGrid";
+import RumpunGrid from "./components/dashboard/RumpunGrid";
 
 // Feature Pages
-import LaboratoryBookingForm from "./pages/LaboratoryBookingForm";
 import LaboratoryInformation from "./pages/LaboratoryInformation";
 import UsageGuide from "./pages/UsageGuide";
 import HelpAndSupport from "./pages/HelpAndSupport";
-import AdminPanel from "./pages/AdminPanel";
 import LandingPage from "./pages/LandingPage";
 import FisikaDashboard from "./pages/Fisika/FisikaDashboard";
 import KimiaDashboard from "./pages/Kimia/KimiaDashboard";
@@ -24,8 +22,11 @@ function App() {
     <AppProvider>
       <Router>
         <Routes>
-          {/* Render Landing Page on root */}
-          <Route path="/" element={<LandingPage />} />
+          {/* Redirect root path to /homepages */}
+          <Route path="/" element={<Navigate to="/homepages" replace />} />
+          
+          {/* Landing Page on /homepages */}
+          <Route path="/homepages" element={<LandingPage />} />
 
           {/* Fisika Custom Dashboard */}
           <Route
@@ -103,14 +104,6 @@ function App() {
             element={
               <DashboardLayout>
                 <HelpAndSupport />
-              </DashboardLayout>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <DashboardLayout>
-                <AdminPanel />
               </DashboardLayout>
             }
           />

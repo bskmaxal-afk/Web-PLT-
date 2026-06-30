@@ -1,4 +1,5 @@
 export const labs = [
+  // --- REMOTE LABS WITH RUMPUN ADDED ---
   {
     id: 1,
     name: "LAB MATEMATIKA",
