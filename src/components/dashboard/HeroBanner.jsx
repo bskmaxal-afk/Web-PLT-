@@ -45,12 +45,13 @@ export default function HeroBanner() {
   return (
     <section className="relative mb-16 mx-8 mt-6">
       {/* Main Container with subtle radial gradient and modern grid lines */}
-      <div className="w-full bg-slate-900 rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden border border-slate-800/80 shadow-2xl flex flex-col lg:flex-row gap-8 items-center min-h-[360px]">
+      <div className="w-full bg-slate-900 rounded-[2.5rem] p-8 md:p-12 pb-20 md:pb-24 lg:pb-16 text-white relative overflow-hidden border border-slate-800/80 shadow-2xl flex flex-col lg:flex-row gap-8 items-center min-h-[420px]">
         
         {/* Background Grid Pattern & Glows */}
         <div className="absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none"></div>
         <div className="absolute right-[-10%] top-[-20%] w-[380px] h-[380px] rounded-full bg-blue-600/20 blur-[90px] pointer-events-none"></div>
         <div className="absolute left-[20%] bottom-[-30%] w-[300px] h-[300px] rounded-full bg-teal-500/10 blur-[80px] pointer-events-none"></div>
+        <div className="absolute right-[5%] top-[10%] w-[200px] h-[200px] rounded-full border border-blue-500/5 border-dashed animate-spin-slow pointer-events-none"></div>
 
         {/* Share Button */}
         <button 
@@ -62,7 +63,7 @@ export default function HeroBanner() {
         </button>
 
         {/* LEFT SIDE: Heading, Subheading, and Search Box */}
-        <div className="flex-1 text-left relative z-10 space-y-6">
+        <div className="flex-1 text-left relative z-10 space-y-6 opacity-0 animate-fade-in-up">
           {/* Animated Time Badge */}
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 px-3.5 py-1.5 rounded-full text-xs font-bold text-blue-300">
             <Sparkles size={13} className="text-teal-400 animate-pulse" />
@@ -103,8 +104,8 @@ export default function HeroBanner() {
         </div>
 
         {/* RIGHT SIDE: Floating Glassmorphic Graphic */}
-        <div className="relative w-full lg:w-[380px] flex items-center justify-center shrink-0 z-10 py-6">
-          <div className="w-[280px] h-[190px] bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 shadow-2xl relative flex flex-col justify-between p-6 transform hover:rotate-1 hover:scale-102 transition duration-300">
+        <div className="relative w-full lg:w-[380px] flex items-center justify-center shrink-0 z-10 py-6 opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <div className="w-[280px] h-[190px] bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 shadow-2xl relative flex flex-col justify-between p-6 transform hover:rotate-1 hover:scale-102 transition duration-300 animate-float">
             {/* Glossy Overlay */}
             <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 rounded-3xl pointer-events-none"></div>
 
@@ -132,7 +133,7 @@ export default function HeroBanner() {
           </div>
 
           {/* Smaller floating card behind */}
-          <div className="absolute top-0 right-4 w-[160px] h-[90px] bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-xl -z-10 transform -rotate-6 translate-y-[-10px] opacity-80 flex items-center justify-center p-4">
+          <div className="absolute top-0 right-4 w-[160px] h-[90px] bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-xl -z-10 transform -rotate-6 translate-y-[-10px] opacity-80 flex items-center justify-center p-4 animate-float-delayed">
             <div className="flex items-center gap-2 text-white text-left">
               <Server size={18} className="text-teal-300" />
               <div>
@@ -146,7 +147,7 @@ export default function HeroBanner() {
       </div>
 
       {/* Floating Statistics overlay section */}
-      <div className="w-[90%] md:w-auto md:absolute md:-bottom-8 md:left-[50%] md:transform md:-translate-x-[50%] bg-white/95 backdrop-blur-md shadow-xl border border-slate-100 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 z-20 mt-4 md:mt-0 mx-auto max-w-3xl">
+      <div className="w-[90%] md:w-auto md:absolute md:-bottom-12 md:left-[50%] md:transform md:-translate-x-[50%] bg-white/95 backdrop-blur-md shadow-xl border border-slate-100 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 z-20 mt-4 md:mt-0 mx-auto max-w-3xl opacity-0 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
         {/* Stat Item 1 */}
         <div className="flex items-center gap-3.5 px-2">
           <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 shadow-sm shadow-emerald-100/50">
