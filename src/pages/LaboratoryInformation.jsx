@@ -8,7 +8,7 @@ const RUMPUN_TABS = [
   { id: "biologi", name: "BIOLOGI", fullName: "Rumpun Biologi" },
   { id: "fisika", name: "FISIKA", fullName: "Rumpun Fisika" },
   { id: "agribisnis", name: "AGRIBISNIS", fullName: "Rumpun Agribisnis" },
-  { id: "tambang", name: "TAMBANG", fullName: "Rumpun Tambang & Geologi" },
+  { id: "tambang", name: "TAMBANG", fullName: "Rumpun Tambang" },
   { id: "pangan", name: "PANGAN", fullName: "Rumpun Pangan" },
   { id: "lingkungan", name: "LINGKUNGAN", fullName: "Rumpun Lingkungan" }
 ];

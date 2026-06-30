@@ -392,7 +392,7 @@ export const labs = [
   },
   {
     id: 31,
-    name: "Fisika Instrumentasi",
+    name: "Fisika Instrumentasi & Fisika Elektronik",
     description: "Laboratorium untuk perancangan sistem sensor, pemrograman mikrokontroler, serta kalibrasi alat ukur elektronik.",
     capacity: 35,
     status: "available",

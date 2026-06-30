@@ -288,8 +288,53 @@ const mapBackendLogbook = (item, schedules = []) => {
   };
 };
 
+const mapLabRumpun = (lab) => {
+  const name = (lab.name || "").toLowerCase();
+  const prodi = (lab.prodi || "").toLowerCase();
+  const jenisLab = (lab.jenisLab || "").toLowerCase();
+
+  let rumpun = lab.rumpun || "";
+
+  if (
+    prodi.includes("informatika") ||
+    prodi.includes("sistem informasi") ||
+    prodi.includes("matematika") ||
+    prodi.includes("data sains") ||
+    jenisLab.includes("it") ||
+    prodi.includes("umum") ||
+    name.includes("elc") ||
+    name.includes("podcast") ||
+    name.includes("riset") ||
+    name.includes("os") ||
+    name.includes("komputasi")
+  ) {
+    rumpun = "tisimat";
+  } else if (name.includes("kimia pangan")) {
+    rumpun = "kimia";
+  } else if (name.includes("pangan") || prodi.includes("pangan")) {
+    rumpun = "pangan";
+  } else if (name.includes("lingkungan") || prodi.includes("lingkungan")) {
+    rumpun = "lingkungan";
+  } else if (prodi.includes("biologi") || name.includes("fisiologi") || name.includes("mikrobiologi") || name.includes("parasitologi")) {
+    rumpun = "biologi";
+  } else if (prodi.includes("fisika") || prodi.includes("elektro") || name.includes("fisika")) {
+    rumpun = "fisika";
+  } else if (prodi.includes("agribisnis") || name.includes("agribisnis") || jenisLab.includes("agribisnis")) {
+    rumpun = "agribisnis";
+  } else if (prodi.includes("tambang") || name.includes("tambang") || jenisLab.includes("tambang")) {
+    rumpun = "tambang";
+  } else if (prodi.includes("kimia") || name.includes("kimia")) {
+    rumpun = "kimia";
+  }
+
+  return {
+    ...lab,
+    rumpun: rumpun || "umum"
+  };
+};
+
 export const AppProvider = ({ children }) => {
-  const [laboratories, setLaboratories] = useState(labs);
+  const [laboratories, setLaboratories] = useState(() => (labs || []).map(mapLabRumpun));
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   // Admin authentication state for Riwayat Penggunaan access
@@ -502,7 +547,7 @@ export const AppProvider = ({ children }) => {
       try {
         const fetchedLabs = await getLabs();
         if (fetchedLabs && fetchedLabs.length > 0) {
-          setLaboratories(fetchedLabs);
+          setLaboratories(fetchedLabs.map(mapLabRumpun));
         }
       } catch (error) {
         console.error("Gagal fetch daftar lab:", error);

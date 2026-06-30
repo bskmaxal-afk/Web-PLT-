@@ -35,7 +35,7 @@ export default function PanganDashboard() {
   const panganLaboratories = useMemo(() => {
     return (laboratories || []).filter((l) => {
       const name = (l.name || "").toLowerCase();
-      return name.includes("pangan");
+      return name.includes("pangan") && !name.includes("kimia");
     });
   }, [laboratories]);
 

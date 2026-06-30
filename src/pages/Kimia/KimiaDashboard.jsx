@@ -33,21 +33,8 @@ export default function KimiaDashboard() {
 
   // Helper: map lab prodi/jenisLab to rumpun
   const getRumpun = useCallback((lab) => {
-    const p = (lab.prodi || "").toLowerCase();
-    const j = (lab.jenisLab || "").toLowerCase();
-    if (p.includes("informatika") || p.includes("sistem informasi") || p.includes("matematika") || p.includes("data sains") || j.includes("it")) {
-      return "IT";
-    }
-    if (p.includes("biologi") || j.includes("biologi")) {
-      return "BIOLOGI";
-    }
-    if (p.includes("fisika") || p.includes("elektro") || j.includes("fisika")) {
-      return "FISIKA";
-    }
-    if (p.includes("kimia") || j.includes("kimia")) {
-      return "KIMIA";
-    }
-    return "UMUM";
+    if (!lab) return "UMUM";
+    return (lab.rumpun || "UMUM").toUpperCase();
   }, []);
 
   // Filter laboratories to only show KIMIA labs (Kimia Analitik, Kimia Anorganik, Kimia Pangan, Laboratorium Penelitian)

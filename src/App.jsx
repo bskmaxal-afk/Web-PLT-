@@ -5,9 +5,12 @@ import HeroBanner from "./components/dashboard/HeroBanner";
 import RumpunGrid from "./components/dashboard/RumpunGrid";
 
 // Feature Pages
+import LaboratoryBookingForm from "./pages/LaboratoryBookingForm";
 import LaboratoryInformation from "./pages/LaboratoryInformation";
 import UsageGuide from "./pages/UsageGuide";
 import HelpAndSupport from "./pages/HelpAndSupport";
+import AdminPanel from "./pages/AdminPanel";
+
 import LandingPage from "./pages/LandingPage";
 import FisikaDashboard from "./pages/Fisika/FisikaDashboard";
 import KimiaDashboard from "./pages/Kimia/KimiaDashboard";
@@ -16,6 +19,7 @@ import AgribisnisDashboard from "./pages/Agribisnis/AgribisnisDashboard";
 import TambangDashboard from "./pages/Tambang/TambangDashboard";
 import PanganDashboard from "./pages/Pangan/PanganDashboard";
 import LingkunganDashboard from "./pages/Lingkungan/LingkunganDashboard";
+import TisimatDashboard from "./pages/Tisimat/TisimatDashboard";
 
 function App() {
   return (
@@ -70,10 +74,21 @@ function App() {
             element={<LingkunganDashboard />}
           />
 
+          {/* Tisimat Custom Dashboard */}
+          <Route
+            path="/tisimat"
+            element={<TisimatDashboard />}
+          />
+
           {/* Dashboard Pages */}
           <Route
             path="/dashboard"
-            element={<KimiaDashboard />}
+            element={
+              <DashboardLayout>
+                <HeroBanner />
+                <RumpunGrid />
+              </DashboardLayout>
+            }
           />
           <Route
             path="/booking"
@@ -104,6 +119,14 @@ function App() {
             element={
               <DashboardLayout>
                 <HelpAndSupport />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <DashboardLayout>
+                <AdminPanel />
               </DashboardLayout>
             }
           />

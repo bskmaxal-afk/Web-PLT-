@@ -10,6 +10,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppContext } from "../../context/AppContext";
 
 /**
@@ -17,6 +18,7 @@ import { AppContext } from "../../context/AppContext";
  * Features dynamic distribution badges, prodi pills, progress indicators, and rich visual interactive cues.
  */
 export default function RumpunGrid() {
+  const navigate = useNavigate();
   const { laboratories, searchQuery } = useContext(AppContext);
 
   // Dynamic laboratory count helper
@@ -98,7 +100,7 @@ export default function RumpunGrid() {
     {
       id: "tambang",
       name: "TAMBANG",
-      fullName: "Rumpun Tambang & Geologi",
+      fullName: "Rumpun Tambang",
       description: "Studi mekanika batuan, pengujian mineralogi galian, pemetaan geologi lapangan, dan survei seismik.",
       icon: Pickaxe,
       colorClass: "bg-orange-500",
@@ -140,11 +142,7 @@ export default function RumpunGrid() {
   ];
 
   const handleSelectRumpun = (rumpun) => {
-    if (rumpun.link && rumpun.link !== "#") {
-      window.location.href = rumpun.link;
-    } else {
-      console.log(`Rumpun ${rumpun.name} diklik. Hubungkan ke URL dashboard matisi/rumpun di RumpunGrid.jsx.`);
-    }
+    navigate(`/${rumpun.id}`);
   };
 
   const renderCard = (rumpun) => {

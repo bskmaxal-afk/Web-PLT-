@@ -27,7 +27,7 @@ import {
   ThumbsUp
 } from "lucide-react";
 
-export default function FisikaDashboard() {
+export default function TisimatDashboard() {
   const navigate = useNavigate();
   const { setSelectedLaboratory, laboratories } = useContext(AppContext);
 
@@ -37,16 +37,16 @@ export default function FisikaDashboard() {
     return (lab.rumpun || "UMUM").toUpperCase();
   }, []);
 
-  // Filter laboratories to only show FISIKA labs
-  const fisikaLaboratories = useMemo(() => {
-    return (laboratories || []).filter((l) => getRumpun(l) === "FISIKA");
+  // Filter laboratories to only show TISIMAT (IT) labs
+  const tisimatLaboratories = useMemo(() => {
+    return (laboratories || []).filter((l) => getRumpun(l) === "TISIMAT");
   }, [laboratories, getRumpun]);
 
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'FISIKA UIN Jakarta - Laboratorium Fisika',
-        text: 'Akses berbagai ruang laboratorium fisika untuk mendukung kegiatan praktikum, penelitian, dan pembelajaran Anda.',
+        title: 'TISIMAT UIN Jakarta - Laboratorium TISIMAT',
+        text: 'Akses berbagai ruang laboratorium TISIMAT untuk mendukung kegiatan praktikum, penelitian, dan pembelajaran Anda.',
         url: window.location.href,
       }).catch(console.error);
     } else {
@@ -109,7 +109,7 @@ export default function FisikaDashboard() {
       case "Syringe":
         return <Syringe size={22} className="stroke-[2.5]" />;
       default:
-        return <BookOpenText size={22} className="stroke-[2.5]" />;
+        return <Computer size={22} className="stroke-[2.5]" />;
     }
   };
 
@@ -120,7 +120,7 @@ export default function FisikaDashboard() {
       className="lab-card group"
     >
       {/* Icon */}
-      <div className={`lab-icon-container ${lab.colorClass || "bg-cyan-500"}`}>
+      <div className={`lab-icon-container ${lab.colorClass || "bg-indigo-600"}`}>
         {renderIcon(lab.icon)}
       </div>
 
@@ -137,7 +137,7 @@ export default function FisikaDashboard() {
             e.stopPropagation();
             handleSelectLaboratory(lab);
           }}
-          className={`lab-action-btn ${lab.borderClass || "border-cyan-500/20 hover:border-cyan-500"} ${lab.textClass || "text-cyan-600"} ${lab.hoverBtnClass || "hover:bg-cyan-500 hover:text-white"}`}
+          className={`lab-action-btn ${lab.borderClass || "border-indigo-500/20 hover:border-indigo-500"} ${lab.textClass || "text-indigo-600"} ${lab.hoverBtnClass || "hover:bg-indigo-600 hover:text-white"}`}
         >
           <ArrowRight size={14} className="stroke-[2.5]" />
         </button>
@@ -147,7 +147,7 @@ export default function FisikaDashboard() {
 
   return (
     <DashboardLayout>
-      {/* ====== HERO BANNER (FISIKA CUSTOMIZED) ====== */}
+      {/* ====== HERO BANNER (TISIMAT CUSTOMIZED) ====== */}
       <section className="hero-section">
         <div 
           className="hero-banner"
@@ -169,13 +169,13 @@ export default function FisikaDashboard() {
           {/* Text Contents */}
           <div className="hero-content">
             <h2 className="hero-title">
-              PLT Fisika UIN Jakarta
+              PLT TISIMAT UIN Jakarta
             </h2>
             <h3 className="hero-subtitle">
-              Rumpun Laboratorium Fisika
+              Rumpun Laboratorium Teknologi Informasi, SI, Matematika
             </h3>
             <p className="hero-description">
-              Akses berbagai fasilitas laboratorium fisika dan elektronika untuk mendukung kegiatan praktikum, penelitian, dan pembelajaran dengan peralatan berstandar tinggi.
+              Akses berbagai fasilitas laboratorium komputer, jaringan, sains data, matematika, multimedia, dan sistem operasi untuk mendukung kegiatan praktikum, penelitian, dan pembelajaran dengan peralatan berstandar tinggi.
             </p>
           </div>
         </div>
@@ -191,12 +191,12 @@ export default function FisikaDashboard() {
         <div className="hero-stats-card">
           {/* Stat item 1 */}
           <div className="hero-stat-item">
-            <div className="hero-stat-icon-wrapper bg-cyan-50 text-cyan-600">
+            <div className="hero-stat-icon-wrapper bg-indigo-50 text-indigo-600">
               <DoorOpen size={20} />
             </div>
             <div className="text-left">
-              <div className="hero-stat-value">{fisikaLaboratories.length}</div>
-              <div className="hero-stat-label">Lab Fisika</div>
+              <div className="hero-stat-value">{tisimatLaboratories.length}</div>
+              <div className="hero-stat-label">Lab TISIMAT</div>
             </div>
           </div>
 
@@ -209,7 +209,7 @@ export default function FisikaDashboard() {
               <Users size={20} />
             </div>
             <div className="text-left">
-              <div className="hero-stat-value">40+</div>
+              <div className="hero-stat-value">50+</div>
               <div className="hero-stat-label">Pengguna Aktif</div>
             </div>
           </div>
@@ -223,7 +223,7 @@ export default function FisikaDashboard() {
               <ThumbsUp size={20} />
             </div>
             <div className="text-left">
-              <div className="hero-stat-value">99%</div>
+              <div className="hero-stat-value">98%</div>
               <div className="hero-stat-label">Tingkat Kepuasan</div>
             </div>
           </div>
@@ -235,19 +235,19 @@ export default function FisikaDashboard() {
         {/* Header Info */}
         <div className="labs-header">
           <span className="labs-section-tag">
-            — Pilih Ruang Laboratorium Fisika —
+            — Pilih Ruang Laboratorium TISIMAT —
           </span>
           <h3 className="labs-section-title">
-            Silahkan Pilih Ruang Laboratorium Fisika
+            Silahkan Pilih Ruang Laboratorium TISIMAT
           </h3>
           <p className="labs-section-subtitle">
-            Pilih ruang laboratorium fisika yang akan digunakan sesuai kebutuhan Anda
+            Pilih ruang laboratorium TISIMAT yang akan digunakan sesuai kebutuhan Anda
           </p>
         </div>
 
         {/* Lab Cards Grid */}
         <div className="labs-grid">
-          {fisikaLaboratories.map((lab) => renderCard(lab))}
+          {tisimatLaboratories.map((lab) => renderCard(lab))}
         </div>
       </section>
     </DashboardLayout>
