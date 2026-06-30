@@ -1,22 +1,18 @@
 import { useContext } from "react";
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, CalendarDays, Info, CircleHelp, Phone, Headphones, X, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Info, CircleHelp, Phone, Headphones, X } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
 import logoUIN from "../../assets/logoUIN_new.png";
 
 const menus = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-  { name: "Pemesanan Ruang", path: "/booking", icon: CalendarDays },
-  { name: "Panel Admin", path: "/admin", icon: ShieldCheck, requiresAdmin: true },
-  { name: "Informasi Lab", path: "/laboratories", icon: Info },
+  { name: "Informasi Rumpun", path: "/laboratories", icon: Info },
   { name: "Panduan Penggunaan", path: "/guide", icon: CircleHelp },
   { name: "Kontak & Bantuan", path: "/contact", icon: Phone },
 ];
 
 // Extracted outside Sidebar to avoid re-creation during render
 const SidebarContent = ({ showCloseBtn = false, setSidebarOpen }) => {
-  const { isAdminAuthenticated } = useContext(AppContext);
-
   return (
     <div className="sidebar-container">
       {/* Brand Header */}
@@ -47,11 +43,6 @@ const SidebarContent = ({ showCloseBtn = false, setSidebarOpen }) => {
       {/* Navigation */}
       <nav className="sidebar-nav">
         {menus.map((item) => {
-          // Hide admin items if not authenticated
-          if (item.requiresAdmin && !isAdminAuthenticated) {
-            return null;
-          }
-
           const Icon = item.icon;
 
           return (
