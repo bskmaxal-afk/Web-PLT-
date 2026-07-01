@@ -1,5 +1,5 @@
-import { useContext, useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+ import { useContext, useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { 
   Lock, Eye, EyeOff, LayoutDashboard, FileText, BarChart2, LogOut,
@@ -15,13 +15,15 @@ import { deleteEntry, deleteLogbookEntry, clearAllLogbooks, clearAllSchedules, g
 import { updateBookingStatus } from "../services/bookingService";
 import Swal from "sweetalert2"
 export default function AdminPanel() {
+  const { rumpunId } = useParams();
+
   const { 
     isAdminAuthenticated, 
     setAdminAuthenticated, 
-    mySchedules, 
+    mySchedules: rawMySchedules, 
     setMySchedules,
-    myHistorySchedules,
-    laboratories,
+    myHistorySchedules: rawMyHistorySchedules,
+    laboratories: rawLaboratories,
     addNotification,
     refreshData,
     isDataLoading,
@@ -31,6 +33,26 @@ export default function AdminPanel() {
   } = useContext(AppContext);
 
   const navigate = useNavigate();
+
+  // Filtered versions to be used everywhere in this component
+  const laboratories = useMemo(() => {
+    if (!rumpunId) return rawLaboratories || [];
+    return (rawLaboratories || []).filter(l => l.rumpun?.toLowerCase() === rumpunId.toLowerCase());
+  }, [rawLaboratories, rumpunId]);
+
+  const rumpunLabNames = useMemo(() => {
+    return new Set(laboratories.map(l => l.name.toLowerCase()));
+  }, [laboratories]);
+
+  const mySchedules = useMemo(() => {
+    if (!rumpunId) return rawMySchedules || [];
+    return (rawMySchedules || []).filter(s => s.ruang && rumpunLabNames.has(s.ruang.toLowerCase()));
+  }, [rawMySchedules, rumpunLabNames, rumpunId]);
+
+  const myHistorySchedules = useMemo(() => {
+    if (!rumpunId) return rawMyHistorySchedules || [];
+    return (rawMyHistorySchedules || []).filter(s => s.ruang && rumpunLabNames.has(s.ruang.toLowerCase()));
+  }, [rawMyHistorySchedules, rumpunLabNames, rumpunId]);
 
   // Auth local states
   const [username, setUsername] = useState("");
@@ -42,9 +64,22 @@ export default function AdminPanel() {
   // Tab state: "dashboard", "data-penggunaan", "laporan", "buat-jadwal"
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  // States untuk data riwayat backend
-  const [historySchedules, setHistorySchedules] = useState([]);
-  const [historyLogbooks, setHistoryLogbooks] = useState([]);
+  // States untuk data riwayat backend (raw data)
+  const [rawHistorySchedules, setRawHistorySchedules] = useState([]);
+  const [rawHistoryLogbooks, setRawHistoryLogbooks] = useState([]);
+
+  const historySchedules = useMemo(() => {
+    if (!rumpunId) return rawHistorySchedules;
+    return rawHistorySchedules.filter(s => s.ruang && rumpunLabNames.has(s.ruang.toLowerCase()));
+  }, [rawHistorySchedules, rumpunLabNames, rumpunId]);
+
+  const historyLogbooks = useMemo(() => {
+    if (!rumpunId) return rawHistoryLogbooks;
+    return rawHistoryLogbooks.filter(lb => {
+      const name = lb.ruang || lb.nama_lab || lb.namaLab || "";
+      return name && rumpunLabNames.has(name.toLowerCase());
+    });
+  }, [rawHistoryLogbooks, rumpunLabNames, rumpunId]);
 
   // Fetch riwayat data dari backend
   const refreshHistoryData = async () => {
@@ -55,8 +90,8 @@ export default function AdminPanel() {
       ]);
       const rawHistSchedules = histSchedRes.success ? histSchedRes.data : [];
       const rawHistLogbooks = histLogRes.success ? histLogRes.data : [];
-      setHistorySchedules(rawHistSchedules);
-      setHistoryLogbooks(rawHistLogbooks);
+      setRawHistorySchedules(rawHistSchedules);
+      setRawHistoryLogbooks(rawHistLogbooks);
     } catch (e) {
       console.error("Gagal memuat data riwayat:", e);
     }
@@ -1962,7 +1997,7 @@ const handleSaveEdit = (e) => {
               <BarChart2 size={20} />
             </div>
             <div>
-              <h2 className="font-extrabold text-base text-slate-800 font-display leading-tight">Admin Portal</h2>
+              <h2 className="font-extrabold text-base text-slate-800 font-display leading-tight">Admin Portal {rumpunId ? rumpunId.toUpperCase() : ""}</h2>
               <span className="text-[10px] text-slate-400 font-bold tracking-wider uppercase">Log Book Lab</span>
             </div>
           </div>
@@ -2068,7 +2103,7 @@ const handleSaveEdit = (e) => {
         {activeTab === "dashboard" && (
           <div className="space-y-8 print:hidden">
             <div>
-              <h1 className="text-2xl font-extrabold text-slate-800 font-display">Dashboard Admin</h1>
+              <h1 className="text-2xl font-extrabold text-slate-800 font-display">Dashboard Admin {rumpunId ? rumpunId.toUpperCase() : ""}</h1>
               <p className="text-xs text-slate-500 mt-1">Gambaran umum log penggunaan laboratorium terbaru.</p>
             </div>
 
@@ -2159,7 +2194,7 @@ const handleSaveEdit = (e) => {
           <div className="space-y-6 print:hidden">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-extrabold text-slate-800 font-display">Data Penggunaan Laboratorium</h1>
+                <h1 className="text-2xl font-extrabold text-slate-800 font-display">Data Penggunaan Laboratorium {rumpunId ? rumpunId.toUpperCase() : ""}</h1>
                 <p className="text-xs text-slate-500 mt-1">Daftar lengkap seluruh log pencatatan penggunaan laboratorium.</p>
               </div>
             </div>
@@ -2514,7 +2549,7 @@ const handleSaveEdit = (e) => {
         {activeTab === "laporan" && (
           <div className="space-y-6">
             <div className="print:hidden">
-              <h1 className="text-2xl font-extrabold text-slate-800 font-display">Laporan Log Book Laboratorium</h1>
+              <h1 className="text-2xl font-extrabold text-slate-800 font-display">Laporan Log Book Laboratorium {rumpunId ? rumpunId.toUpperCase() : ""}</h1>
               <p className="text-xs text-slate-500 mt-1">Cetak laporan data atau ekspor data ke format spreadsheet Excel.</p>
             </div>
 
@@ -2677,7 +2712,7 @@ const handleSaveEdit = (e) => {
         {activeTab === "buat-jadwal" && (
           <div className="max-w-6xl mx-auto space-y-6">
             <div>
-              <h1 className="text-2xl font-extrabold text-slate-800 font-display">Buat Jadwal Kuliah</h1>
+              <h1 className="text-2xl font-extrabold text-slate-800 font-display">Buat Jadwal Kuliah {rumpunId ? rumpunId.toUpperCase() : ""}</h1>
               <p className="text-xs text-slate-500 mt-1">
                 Tambahkan jadwal perkuliahan massal melalui impor file atau isi form entri manual di bawah ini.
               </p>

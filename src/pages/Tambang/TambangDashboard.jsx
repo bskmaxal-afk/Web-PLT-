@@ -2,6 +2,7 @@ import { useState, useEffect, useContext, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../../context/AppContext";
 import DashboardLayout from "../../layouts/DashboardLayout";
+
 import heroImg from "../../assets/hero.png";
 import logoUIN from "../../assets/logoUIN_new.png";
 import Swal from "sweetalert2";
@@ -61,7 +62,7 @@ export default function TambangDashboard() {
 
   const handleSelectLaboratory = (lab) => {
     setSelectedLaboratory(lab);
-    navigate("/booking");
+    navigate("/booking?rumpun=tambang");
   };
 
   const renderIcon = (type) => {

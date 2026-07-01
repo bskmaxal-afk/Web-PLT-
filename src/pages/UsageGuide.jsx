@@ -1,8 +1,33 @@
+import { useSearchParams } from "react-router-dom";
+
 /**
- * UsageGuide — Step-by-step guide for navigating the PLT homepage and rumpun dashboards.
+ * UsageGuide — Step-by-step guide for navigating the PLT homepage and rumpun dashboards,
+ * or procedure for lab booking inside specific rumpuns.
  */
 export default function UsageGuide() {
-  const steps = [
+  const [searchParams] = useSearchParams();
+  const rumpun = searchParams.get("rumpun");
+
+  // Nama rumpun dalam huruf kapital (misal TISIMAT)
+  const rumpunName = rumpun ? rumpun.toUpperCase() : null;
+
+  const steps = rumpunName ? [
+    {
+      step: "01",
+      title: "Pilih Ruang & Jadwal",
+      desc: `Lihat daftar laboratorium yang tersedia pada rumpun ${rumpunName} di halaman Dashboard, kemudian cek ketersediaan ruang atau langsung buka menu "Pemesanan Ruang".`,
+    },
+    {
+      step: "02",
+      title: "Isi Formulir Pemesanan",
+      desc: `Lengkapi formulir pengisian data pemesanan: penanggung jawab kegiatan, nomor WhatsApp aktif, mata kuliah (jika terjadwal), tanggal, jam mulai & selesai, jumlah hadir, serta keterangan penggunaan untuk rumpun ${rumpunName}.`,
+    },
+    {
+      step: "03",
+      title: "Check-in & Gunakan Lab",
+      desc: `Datanglah tepat waktu ke laboratorium rumpun ${rumpunName} sesuai dengan waktu peminjaman yang telah disetujui. Hubungi laboran atau admin di lokasi untuk membuka ruangan.`,
+    },
+  ] : [
     {
       step: "01",
       title: "Pilih Rumpun Keilmuan",
@@ -20,15 +45,23 @@ export default function UsageGuide() {
     },
   ];
 
+  const title = rumpunName 
+    ? `Alur Prosedur Peminjaman Lab ${rumpunName}`
+    : "Panduan Navigasi Portal PLT";
+
+  const subtitle = rumpunName
+    ? `Ikuti langkah-langkah mudah untuk menggunakan fasilitas Lab Rumpun ${rumpunName}`
+    : "Ikuti langkah-langkah mudah untuk mengakses informasi layanan Pusat Laboratorium Terpadu";
+
   return (
     <div className="px-8 max-w-3xl mx-auto">
       <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8">
         <div className="mb-8 text-center">
           <h2 className="text-xl font-bold text-slate-800 font-display">
-            Panduan Navigasi Portal PLT
+            {title}
           </h2>
           <p className="text-slate-400 text-xs font-semibold mt-1">
-            Ikuti langkah-langkah mudah untuk mengakses informasi layanan Pusat Laboratorium Terpadu
+            {subtitle}
           </p>
         </div>
 
@@ -51,22 +84,44 @@ export default function UsageGuide() {
         </div>
 
         {/* Tips section */}
-        <div className="mt-8 p-6 bg-blue-50/30 border border-blue-100/50 rounded-2xl">
-          <h4 className="text-xs font-extrabold text-blue-800 mb-2.5 uppercase tracking-wider">
-            💡 Informasi Tambahan
-          </h4>
-          <ul className="text-xs text-blue-700/80 space-y-2 font-semibold">
-            <li>
-              • Ringkasan spesifikasi laboratorium dan profil rumpun juga dapat diakses langsung melalui menu <strong>"Informasi Rumpun"</strong> di sidebar tanpa berpindah portal.
-            </li>
-            <li>
-              • Jadwal penggunaan laboratorium dan aktivitas perkuliahan dapat dilihat pada dashboard rumpun masing-masing setelah Anda dialihkan.
-            </li>
-            <li>
-              • Jika tautan pengalihan rumpun mengalami kendala akses, silakan laporkan ke tim pengelola melalui menu <strong>"Kontak & Bantuan"</strong>.
-            </li>
-          </ul>
-        </div>
+        {rumpunName ? (
+          <div className="mt-8 p-6 bg-blue-50/30 border border-blue-100/50 rounded-2xl">
+            <h4 className="text-xs font-extrabold text-blue-800 mb-2.5 uppercase tracking-wider">
+              💡 Tips Penting
+            </h4>
+            <ul className="text-xs text-blue-700/80 space-y-2 font-semibold">
+              <li>
+                • Ajukan pemesanan ruang minimal <strong>2 hari sebelum</strong> tanggal kegiatan berlangsung.
+              </li>
+              <li>
+                • Pastikan kapasitas jumlah peserta kegiatan tidak melebihi batas maksimal laboratorium rumpun {rumpunName}.
+              </li>
+              <li>
+                • Untuk kegiatan praktikum terjadwal (mata kuliah), pastikan mengisi nama dosen pengampu mata kuliah dengan benar.
+              </li>
+              <li>
+                • Apabila ada perubahan jadwal atau pembatalan, silakan hubungi admin rumpun {rumpunName} melalui menu Kontak.
+              </li>
+            </ul>
+          </div>
+        ) : (
+          <div className="mt-8 p-6 bg-blue-50/30 border border-blue-100/50 rounded-2xl">
+            <h4 className="text-xs font-extrabold text-blue-800 mb-2.5 uppercase tracking-wider">
+              💡 Informasi Tambahan
+            </h4>
+            <ul className="text-xs text-blue-700/80 space-y-2 font-semibold">
+              <li>
+                • Ringkasan spesifikasi laboratorium dan profil rumpun juga dapat diakses langsung melalui menu <strong>"Informasi Rumpun"</strong> di sidebar tanpa berpindah portal.
+              </li>
+              <li>
+                • Jadwal penggunaan laboratorium dan aktivitas perkuliahan dapat dilihat pada dashboard rumpun masing-masing setelah Anda dialihkan.
+              </li>
+              <li>
+                • Jika tautan pengalihan rumpun mengalami kendala akses, silakan laporkan ke tim pengelola melalui menu <strong>"Kontak & Bantuan"</strong>.
+              </li>
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -130,6 +130,14 @@ function App() {
               </DashboardLayout>
             }
           />
+          <Route
+            path="/admin/:rumpunId"
+            element={
+              <DashboardLayout>
+                <AdminPanel />
+              </DashboardLayout>
+            }
+          />
         </Routes>
       </Router>
     </AppProvider>

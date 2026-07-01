@@ -1,5 +1,5 @@
 import { useState, useContext, useMemo, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import { submitBooking } from "../services/bookingService";
 import Swal from "sweetalert2";
@@ -73,11 +73,23 @@ export default function LaboratoryBookingForm() {
     (s) => s.status === "kosong" || s.status === "dipesan" || s.status === "diterima"
   );
 
+  const [searchParams] = useSearchParams();
+  const urlRumpun = searchParams.get("rumpun");
+
   // Search & filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [filterHari, setFilterHari] = useState("");
-  const [filterRumpun, setFilterRumpun] = useState(initialRumpun || "FISIKA");
+  const [filterRumpun, setFilterRumpun] = useState(() => {
+    return initialRumpun || (urlRumpun ? urlRumpun.toUpperCase() : "FISIKA");
+  });
   const [filterRuang, setFilterRuang] = useState(preselectedLabName);
+
+  // Sync urlRumpun if search params change
+  useEffect(() => {
+    if (urlRumpun && !preselectedLabName) {
+      setFilterRumpun(urlRumpun.toUpperCase());
+    }
+  }, [urlRumpun, preselectedLabName]);
 
   // Sync initialRumpun if selectedLaboratory changes
   useEffect(() => {

@@ -1,18 +1,62 @@
 import { useContext } from "react";
-import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Info, CircleHelp, Phone, Headphones, X } from "lucide-react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { LayoutDashboard, Info, CircleHelp, Phone, Headphones, X, CalendarDays, ShieldCheck, ArrowLeft } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
 import logoUIN from "../../assets/logoUIN_new.png";
-
-const menus = [
-  { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-  { name: "Informasi Rumpun", path: "/laboratories", icon: Info },
-  { name: "Panduan Penggunaan", path: "/guide", icon: CircleHelp },
-  { name: "Kontak & Bantuan", path: "/contact", icon: Phone },
-];
+import Swal from "sweetalert2";
 
 // Extracted outside Sidebar to avoid re-creation during render
 const SidebarContent = ({ showCloseBtn = false, setSidebarOpen }) => {
+  const { isAdminAuthenticated } = useContext(AppContext);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const pathParts = location.pathname.split("/").filter(Boolean);
+  const rumpunList = ["tisimat", "biologi", "fisika", "kimia", "agribisnis", "tambang", "pangan", "lingkungan"];
+  let currentRumpun = null;
+
+  if (pathParts[0] && rumpunList.includes(pathParts[0].toLowerCase())) {
+    currentRumpun = pathParts[0].toLowerCase();
+  } else if (pathParts[0] === "admin" && pathParts[1] && rumpunList.includes(pathParts[1].toLowerCase())) {
+    currentRumpun = pathParts[1].toLowerCase();
+  } else {
+    // Cek parameter query ?rumpun=...
+    const searchParams = new URLSearchParams(location.search);
+    const urlRumpun = searchParams.get("rumpun");
+    if (urlRumpun && rumpunList.includes(urlRumpun.toLowerCase())) {
+      currentRumpun = urlRumpun.toLowerCase();
+    }
+  }
+
+  const menus = [
+    { name: "Dashboard", path: currentRumpun ? `/${currentRumpun}` : "/dashboard", icon: LayoutDashboard },
+    ...(currentRumpun ? [
+      { 
+        name: "Pemesanan Ruang", 
+        path: `/booking?rumpun=${currentRumpun}`, 
+        icon: CalendarDays 
+      }
+    ] : []),
+    { 
+      name: "Panel Admin", 
+      path: currentRumpun ? `/admin/${currentRumpun}` : "/admin", 
+      icon: ShieldCheck, 
+      requiresAdmin: true 
+    },
+    ...(!currentRumpun ? [
+      { name: "Informasi Rumpun", path: "/laboratories", icon: Info }
+    ] : []),
+    { name: "Panduan Penggunaan", path: currentRumpun ? `/guide?rumpun=${currentRumpun}` : "/guide", icon: CircleHelp },
+    { name: "Kontak & Bantuan", path: currentRumpun ? `/contact?rumpun=${currentRumpun}` : "/contact", icon: Phone },
+    ...(currentRumpun ? [
+      { 
+        name: "Kembali Ke Utama", 
+        path: "/dashboard", 
+        icon: ArrowLeft 
+      }
+    ] : []),
+  ];
+
   return (
     <div className="sidebar-container">
       {/* Brand Header */}
@@ -43,13 +87,39 @@ const SidebarContent = ({ showCloseBtn = false, setSidebarOpen }) => {
       {/* Navigation */}
       <nav className="sidebar-nav">
         {menus.map((item) => {
+          // Sembunyikan item admin jika belum terautentikasi
+          if (item.requiresAdmin && !isAdminAuthenticated) {
+            return null;
+          }
+
           const Icon = item.icon;
 
           return (
             <NavLink
               key={item.name}
               to={item.path}
-              onClick={() => setSidebarOpen(false)}
+              onClick={(e) => {
+                if (item.name === "Kembali Ke Utama") {
+                  e.preventDefault();
+                  Swal.fire({
+                    title: "Kembali ke Halaman Utama?",
+                    text: "Anda akan keluar dari rumpun aktif saat ini.",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonColor: "#2563eb",
+                    cancelButtonColor: "#dc2626",
+                    confirmButtonText: "Ya, Kembali",
+                    cancelButtonText: "Batal",
+                  }).then((result) => {
+                    if (result.isConfirmed) {
+                      setSidebarOpen(false);
+                      navigate(item.path);
+                    }
+                  });
+                } else {
+                  setSidebarOpen(false);
+                }
+              }}
               className={({ isActive }) =>
                 `flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-semibold ${
                   isActive

@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, Calendar } from "lucide-react";
 import { AppContext } from "../../context/AppContext";
 
@@ -7,7 +8,26 @@ import { AppContext } from "../../context/AppContext";
  */
 export default function Navbar() {
   const [time, setTime] = useState(new Date());
-  const { setSidebarOpen } = useContext(AppContext);
+  const { setSidebarOpen, isAdminAuthenticated } = useContext(AppContext);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const pathParts = location.pathname.split("/").filter(Boolean);
+  const rumpunList = ["tisimat", "biologi", "fisika", "kimia", "agribisnis", "tambang", "pangan", "lingkungan"];
+  let currentRumpun = null;
+
+  if (pathParts[0] && rumpunList.includes(pathParts[0].toLowerCase())) {
+    currentRumpun = pathParts[0].toLowerCase();
+  } else if (pathParts[0] === "admin" && pathParts[1] && rumpunList.includes(pathParts[1].toLowerCase())) {
+    currentRumpun = pathParts[1].toLowerCase();
+  } else {
+    // Cek parameter query ?rumpun=...
+    const searchParams = new URLSearchParams(location.search);
+    const urlRumpun = searchParams.get("rumpun");
+    if (urlRumpun && rumpunList.includes(urlRumpun.toLowerCase())) {
+      currentRumpun = urlRumpun.toLowerCase();
+    }
+  }
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -55,25 +75,37 @@ export default function Navbar() {
   };
 
   return (
-    <header className="navbar-container">
-      {/* Menu Button (mobile only) */}
-      <button
-        onClick={() => setSidebarOpen(true)}
-        className="menu-toggle-btn"
-      >
-        <Menu size={18} />
-      </button>
+    <header className="navbar-container flex items-center justify-between">
+      {/* Left side: Menu toggle for mobile, Calendar & Green Admin Panel button */}
+      <div className="flex items-center gap-4">
+        {/* Menu Button (mobile only) */}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="menu-toggle-btn"
+        >
+          <Menu size={18} />
+        </button>
 
-      {/* Spacer for desktop */}
-      <div className="hidden lg:block"></div>
-
-      {/* Date Time display */}
-      <div className="navbar-right">
-        <div className="datetime-display">
-          <Calendar size={15} className="text-slate-500" />
-          <span>{formatIndonesianDate(time)}</span>
+        {/* Date Time display */}
+        <div className="datetime-display flex items-center gap-2 text-slate-650 font-semibold text-[13px] bg-transparent">
+          <Calendar size={15} className="text-slate-500 shrink-0" />
+          <span className="hidden sm:inline">{formatIndonesianDate(time)}</span>
+          <span className="sm:hidden">{time.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
+
+        {/* Green Admin Panel button (only visible inside rumpun) */}
+        {currentRumpun && (
+          <button
+            onClick={() => navigate(`/admin/${currentRumpun}`)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] md:text-xs font-bold transition-all shadow-md shadow-emerald-500/10 border-none cursor-pointer active:scale-95 shrink-0"
+          >
+            <span>Panel Admin</span>
+          </button>
+        )}
       </div>
+
+      {/* Right side spacer */}
+      <div className="navbar-right"></div>
     </header>
   );
 }
