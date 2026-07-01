@@ -292,7 +292,7 @@ export default function LaboratoryBookingForm() {
         await Swal.fire({
           icon: "success",
           title: "Pemesanan Berhasil",
-          text: `Pemesanan ${selectedSchedule?.ruang} berhasil dikirim!\nStatus: Dipesan.`,
+          text: `Pemesanan ${selectedSchedule?.ruang} berhasil dikirim!\nStatus: Ruangan Dipakai.`,
           confirmButtonColor: "#3b82f6"
         });
         navigate("/dashboard");
@@ -563,7 +563,7 @@ export default function LaboratoryBookingForm() {
                                 )}
                                 {isBooked && (
                                   <span className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-red-50 border border-red-200 text-red-600 font-semibold">
-                                    Sudah Dipesan
+                                    Ruangan Dipakai
                                   </span>
                                 )}
                                 {isBookable && (

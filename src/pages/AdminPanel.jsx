@@ -181,6 +181,7 @@ export default function AdminPanel() {
   const [endDate, setEndDate] = useState("");
   const [reportType, setReportType] = useState("semua"); // "semua", "harian", "semester"
   const [reportStatus, setReportStatus] = useState("semua"); // "semua", "dipesan", "kosong"
+  const [reportLab, setReportLab] = useState("");
 
   // Detail Modal State
   const [selectedLog, setSelectedLog] = useState(null);
@@ -1289,7 +1290,13 @@ const handleSaveEdit = (e) => {
       matchesStatus = log.status === "tidak terpakai";
     }
 
-    return matchesDate && matchesType && matchesStatus;
+    // 4. Filter Laboratorium
+    let matchesLab = true;
+    if (reportLab) {
+      matchesLab = log.ruang && log.ruang.toLowerCase() === reportLab.toLowerCase();
+    }
+
+    return matchesDate && matchesType && matchesStatus && matchesLab;
   });
 
   // Export Report to Excel (.xlsx) using SheetJS
@@ -2218,7 +2225,7 @@ const handleSaveEdit = (e) => {
                   <AlertCircle size={18} />
                 </div>
                 <div>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Dipesan (Ada Kegiatan)</p>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Ruangan Dipakai</p>
                   <h3 className="text-lg font-bold text-slate-800 font-display mt-0.5">
                     {mySchedules.filter(s => s.status === "dipesan" || s.status === "diterima").length}
                   </h3>
@@ -2296,7 +2303,7 @@ const handleSaveEdit = (e) => {
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white cursor-pointer"
                 >
                   <option value="">Semua Status</option>
-                  <option value="dipesan">Dipesan</option>
+                  <option value="dipesan">Ruangan Dipakai</option>
                   <option value="selesai">Selesai</option>
                   <option value="kosong">Kosong</option>
                 </select>
@@ -2406,7 +2413,7 @@ const handleSaveEdit = (e) => {
                               </span>
                             ) : log.status === "dipesan" ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-[10px] font-bold">
-                                <AlertCircle size={11} /> Dipesan (Ada Kegiatan)
+                                <AlertCircle size={11} /> Ruangan Dipakai
                               </span>
                             ) : log.status === "diterima" ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-[10px] font-bold">
@@ -2557,7 +2564,7 @@ const handleSaveEdit = (e) => {
             <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-4 print:hidden">
               <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Filter Laporan</h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Jenis Laporan (Periode)</label>
                   <select
@@ -2581,6 +2588,20 @@ const handleSaveEdit = (e) => {
                     <option value="semua">Semua Status</option>
                     <option value="terpakai">Terpakai</option>
                     <option value="tidak terpakai">Tidak Terpakai</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Pilih Laboratorium</label>
+                  <select
+                    value={reportLab}
+                    onChange={(e) => setReportLab(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white cursor-pointer"
+                  >
+                    <option value="">Semua Laboratorium</option>
+                    {laboratories.map((lab) => (
+                      <option key={lab.id} value={lab.name}>{lab.name}</option>
+                    ))}
                   </select>
                 </div>
                 

@@ -71,21 +71,21 @@ export default function LandingPage() {
       <div className="absolute bottom-[35%] left-[28%] w-3.5 h-3.5 rounded-full bg-blue-400/10 blur-xs"></div>
 
       {/* HEADER / NAVBAR */}
-      <header className="w-full max-w-7xl mx-auto px-6 lg:px-12 py-6 flex items-center justify-between z-10">
+      <header className="w-full max-w-7xl mx-auto px-6 lg:px-12 py-3 md:py-4 flex items-center justify-between z-10">
         {/* Logo and Brand Info */}
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 flex items-center justify-center shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center shrink-0">
             <img src={logoUIN} alt="UIN Logo" className="max-w-full max-h-full object-contain" />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-sm md:text-base font-black text-[#0f3484] tracking-wider leading-none uppercase font-display">
+            <h1 className="text-xs md:text-sm font-black text-[#0f3484] tracking-wider leading-none uppercase font-display">
               UIN SYARIF HIDAYATULLAH
             </h1>
-            <h2 className="text-sm md:text-base font-black text-[#0f3484] tracking-wider leading-none uppercase font-display mt-0.5">
+            <h2 className="text-xs md:text-sm font-black text-[#0f3484] tracking-wider leading-none uppercase font-display mt-0.5">
               JAKARTA
             </h2>
-            <div className="mt-1">
-              <span className="inline-block px-3 py-0.5 bg-[#0f3484] text-white text-[10px] md:text-xs font-bold rounded-md">
+            <div className="mt-0.5">
+              <span className="inline-block px-2 py-0.5 bg-[#0f3484] text-white text-[9px] md:text-[10px] font-bold rounded-md">
                 2026
               </span>
             </div>
@@ -96,116 +96,116 @@ export default function LandingPage() {
         <div>
           <Link
             to="/contact"
-            className="flex items-center gap-2 px-4 py-2 border border-slate-200 hover:border-blue-200 text-[#0f3484] rounded-xl text-xs md:text-sm font-bold bg-white/50 backdrop-blur-xs hover:bg-blue-50/50 transition-all duration-200 active:scale-95 shadow-xs"
+            className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 hover:border-blue-200 text-[#0f3484] rounded-xl text-xs font-bold bg-white/50 backdrop-blur-xs hover:bg-blue-50/50 transition-all duration-200 active:scale-95 shadow-xs"
           >
-            <HelpCircle size={15} className="text-[#0f3484]" />
+            <HelpCircle size={14} className="text-[#0f3484]" />
             <span>Pusat Bantuan</span>
           </Link>
         </div>
       </header>
 
       {/* MAIN HERO CONTENT */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-6 lg:px-12 flex flex-col justify-center py-8 z-10">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-6 lg:px-12 flex flex-col items-center justify-center text-center py-4 lg:py-6 space-y-6 z-10">
         
         {/* Hero Title & Description */}
-        <div className="max-w-3xl text-left mb-10 md:mb-12">
-          <p className="text-[#0f3484]/90 text-lg md:text-2xl font-bold tracking-tight font-display mb-1.5">
-            Selamat Datang di
-          </p>
-          <h2 className="text-3xl md:text-5xl lg:text-[46px] font-black text-[#0f3484] tracking-tight leading-tight mb-5 font-display">
-            PLT – Pusat Laboratorium Terpadu
+        <div className="max-w-3xl space-y-3">
+          <h2 
+            className="text-5xl md:text-7xl font-extrabold text-[#0f3484] tracking-wide select-none"
+            style={{ fontFamily: "'Fredoka', sans-serif" }}
+          >
+            SIMPUL
           </h2>
-          <p className="text-slate-600 text-sm md:text-base leading-relaxed max-w-2xl font-medium">
-            PLT UIN Syarif Hidayatullah Jakarta menyediakan layanan laboratorium terintegrasi untuk mendukung kegiatan akademik, penelitian, dan pengabdian kepada masyarakat.
+          <h3 className="text-base md:text-xl font-extrabold text-[#0d307d] tracking-normal uppercase leading-tight">
+            Sistem Manajemen Penggunaan Laboratorium
+          </h3>
+          <p className="text-slate-500 text-xs md:text-sm leading-relaxed max-w-xl mx-auto font-semibold">
+            Pusat Laboratorium Terpadu UIN Syarif Hidayatullah Jakarta
           </p>
         </div>
 
-        {/* Features Row Card */}
-        <div className="w-full bg-white rounded-3xl border border-slate-100 shadow-md shadow-slate-100/50 p-6 md:py-6 md:px-8 mb-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-4 divide-y sm:divide-y-0 lg:divide-x divide-slate-100">
-          
+        {/* Features Grid 4 Columns Centered & Compact */}
+        <div className="w-full max-w-4xl grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {/* Feature 1: Terintegrasi */}
-          <div className="flex items-center gap-4 lg:px-4 py-3 sm:py-2">
-            <div className="w-12 h-12 rounded-full bg-[#0f3484] text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/10">
-              <ShieldCheck size={20} className="stroke-[2.2]" />
+          <div className="flex items-center gap-3 p-3 bg-white/70 backdrop-blur-xs rounded-2xl border border-slate-100 shadow-xs hover:shadow-md hover:shadow-slate-100/50 transition duration-200 text-left">
+            <div className="w-9 h-9 rounded-full bg-[#0f3484] text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/10">
+              <ShieldCheck size={16} className="stroke-[2.2]" />
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-800 text-sm md:text-base leading-tight mb-0.5">
+              <h3 className="font-extrabold text-slate-800 text-[11px] md:text-xs leading-tight mb-0.5">
                 Terintegrasi
               </h3>
-              <p className="text-slate-500 text-xs leading-snug">
-                Sistem laboratorium terpadu dan modern
+              <p className="text-slate-400 text-[9px] md:text-[10px]">
+                Sistem lab terpadu
               </p>
             </div>
           </div>
 
           {/* Feature 2: Profesional */}
-          <div className="flex items-center gap-4 lg:px-6 py-3 sm:py-2 pt-4 sm:pt-2">
-            <div className="w-12 h-12 rounded-full bg-[#0f3484] text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/10">
-              <Users size={20} className="stroke-[2.2]" />
+          <div className="flex items-center gap-3 p-3 bg-white/70 backdrop-blur-xs rounded-2xl border border-slate-100 shadow-xs hover:shadow-md hover:shadow-slate-100/50 transition duration-200 text-left">
+            <div className="w-9 h-9 rounded-full bg-[#0f3484] text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/10">
+              <Users size={16} className="stroke-[2.2]" />
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-800 text-sm md:text-base leading-tight mb-0.5">
+              <h3 className="font-extrabold text-slate-800 text-[11px] md:text-xs leading-tight mb-0.5">
                 Profesional
               </h3>
-              <p className="text-slate-500 text-xs leading-snug">
-                Dikelola oleh tenaga ahli berkompeten
+              <p className="text-slate-400 text-[9px] md:text-[10px]">
+                Tenaga ahli kompeten
               </p>
             </div>
           </div>
 
           {/* Feature 3: Akurat */}
-          <div className="flex items-center gap-4 lg:px-6 py-3 sm:py-2 pt-4 sm:pt-2">
-            <div className="w-12 h-12 rounded-full bg-[#0f3484] text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/10">
-              <Microscope size={20} className="stroke-[2.2]" />
+          <div className="flex items-center gap-3 p-3 bg-white/70 backdrop-blur-xs rounded-2xl border border-slate-100 shadow-xs hover:shadow-md hover:shadow-slate-100/50 transition duration-200 text-left">
+            <div className="w-9 h-9 rounded-full bg-[#0f3484] text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/10">
+              <Microscope size={16} className="stroke-[2.2]" />
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-800 text-sm md:text-base leading-tight mb-0.5">
+              <h3 className="font-extrabold text-slate-800 text-[11px] md:text-xs leading-tight mb-0.5">
                 Akurat
               </h3>
-              <p className="text-slate-500 text-xs leading-snug">
-                Peralatan standar dan terkalibrasi
+              <p className="text-slate-400 text-[9px] md:text-[10px]">
+                Peralatan standar
               </p>
             </div>
           </div>
 
           {/* Feature 4: Melayani */}
-          <div className="flex items-center gap-4 lg:px-6 py-3 sm:py-2 pt-4 sm:pt-2">
-            <div className="w-12 h-12 rounded-full bg-[#0f3484] text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/10">
-              <BookOpen size={20} className="stroke-[2.2]" />
+          <div className="flex items-center gap-3 p-3 bg-white/70 backdrop-blur-xs rounded-2xl border border-slate-100 shadow-xs hover:shadow-md hover:shadow-slate-100/50 transition duration-200 text-left">
+            <div className="w-9 h-9 rounded-full bg-[#0f3484] text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/10">
+              <BookOpen size={16} className="stroke-[2.2]" />
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-800 text-sm md:text-base leading-tight mb-0.5">
+              <h3 className="font-extrabold text-slate-800 text-[11px] md:text-xs leading-tight mb-0.5">
                 Melayani
               </h3>
-              <p className="text-slate-500 text-xs leading-snug">
-                Untuk akademik, penelitian & masyarakat
+              <p className="text-slate-400 text-[9px] md:text-[10px]">
+                Riset & masyarakat
               </p>
             </div>
           </div>
-
         </div>
 
-        {/* Central Entry Access Card */}
-        <div className="max-w-xl w-full mx-auto bg-white rounded-[2.5rem] border border-slate-100/80 shadow-lg shadow-slate-200/40 p-8 md:p-10 flex flex-col items-center text-center relative z-10 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/60">
-          {/* Circular flask icon wrapper */}
-          <div className="w-20 h-20 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-6 border border-blue-100/50 shadow-inner">
-            <FlaskConical size={32} className="stroke-[1.8] text-blue-600" />
+        {/* Central Entry Access Card - Sleek & Compact */}
+        <div className="max-w-sm w-full bg-white rounded-3xl border border-slate-100/80 shadow-md p-5 flex flex-col items-center text-center relative z-10 transition-all duration-300 hover:shadow-lg">
+          <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-3 border border-blue-100/50 shadow-inner">
+            <FlaskConical size={18} className="stroke-[1.8] text-blue-600" />
           </div>
 
-          <h3 className="text-lg md:text-xl font-bold text-slate-800 mb-2 font-display">
+          <h3 className="text-xs md:text-sm font-bold text-slate-800 mb-1 font-display">
             Akses Layanan Laboratorium
           </h3>
           
-          <p className="text-slate-500 text-xs md:text-sm leading-relaxed max-w-sm mb-8 font-medium">
+          <p className="text-slate-400 text-[10px] md:text-[11px] leading-relaxed max-w-xs mb-4 font-semibold">
             Masuk untuk melihat daftar laboratorium, informasi layanan, serta melakukan pemesanan dan konsultasi.
           </p>
 
           <Link
             to="/dashboard"
-            className="w-full py-4 bg-[#0a48b3] hover:bg-[#0f3484] text-white rounded-2xl font-extrabold text-sm md:text-base flex items-center justify-center gap-2.5 transition-all duration-200 hover:gap-3.5 hover:shadow-lg hover:shadow-blue-600/10 active:scale-98 cursor-pointer"
+            className="w-full py-2.5 bg-[#0a48b3] hover:bg-[#0f3484] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-98"
           >
             <span>Masuk</span>
-            <ArrowRight size={18} className="stroke-[2.5]" />
+            <ArrowRight size={14} className="stroke-[2.5]" />
           </Link>
         </div>
 

@@ -296,6 +296,10 @@ const mapLabRumpun = (lab) => {
   let rumpun = lab.rumpun || "";
 
   if (
+    name.includes("fisika material")
+  ) {
+    rumpun = "fisika";
+  } else if (
     prodi.includes("informatika") ||
     prodi.includes("sistem informasi") ||
     prodi.includes("matematika") ||
