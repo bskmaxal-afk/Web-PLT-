@@ -75,29 +75,31 @@ export default function Navbar() {
   };
 
   return (
-    <header className="navbar-container flex items-center justify-between">
+    <header className="navbar-container flex items-center justify-between py-4 px-8 bg-transparent">
       {/* Left side: Menu toggle for mobile, Calendar & Green Admin Panel button */}
       <div className="flex items-center gap-4">
         {/* Menu Button (mobile only) */}
         <button
           onClick={() => setSidebarOpen(true)}
-          className="menu-toggle-btn"
+          className="menu-toggle-btn w-9 h-9 rounded-full bg-white flex items-center justify-center text-slate-700 shadow-xs border border-slate-100/80 hover:bg-slate-50 transition shrink-0 cursor-pointer lg:hidden"
         >
-          <Menu size={18} />
+          <Menu size={16} />
         </button>
 
         {/* Date Time display */}
-        <div className="datetime-display flex items-center gap-2 text-slate-650 font-semibold text-[13px] bg-transparent">
-          <Calendar size={15} className="text-slate-500 shrink-0" />
-          <span className="hidden sm:inline">{formatIndonesianDate(time)}</span>
-          <span className="sm:hidden">{time.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })}</span>
+        <div className="datetime-display flex items-center gap-2 text-slate-500 font-bold text-xs bg-white/70 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-slate-100/50 shadow-xs">
+          <div className="w-5 h-5 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+            <Calendar size={12} />
+          </div>
+          <span className="hidden sm:inline font-sans tracking-wide text-slate-650">{formatIndonesianDate(time)}</span>
+          <span className="sm:hidden font-mono text-slate-650">{time.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
 
         {/* Green Admin Panel button (only visible inside rumpun) */}
         {currentRumpun && (
           <button
             onClick={() => navigate(`/admin/${currentRumpun}`)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] md:text-xs font-bold transition-all shadow-md shadow-emerald-500/10 border-none cursor-pointer active:scale-95 shrink-0"
+            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-extrabold transition-all shadow-xs border-none cursor-pointer active:scale-95 shrink-0"
           >
             <span>Panel Admin</span>
           </button>
