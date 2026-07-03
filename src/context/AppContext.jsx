@@ -40,6 +40,37 @@ const parseDateToISO = (dateStr) => {
   return dateStr;
 };
 
+const formatTimeTo12Hour = (timeStr) => {
+  if (!timeStr) return "";
+  const cleanTime = timeStr.trim();
+  if (cleanTime.toUpperCase().includes("AM") || cleanTime.toUpperCase().includes("PM")) {
+    return cleanTime;
+  }
+  const parts = cleanTime.split(":");
+  if (parts.length >= 2) {
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1].slice(0, 2).padStart(2, "0");
+    if (isNaN(hours)) return cleanTime;
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const hoursStr = String(hours).padStart(2, "0");
+    return `${hoursStr}:${minutes} ${ampm}`;
+  }
+  return cleanTime;
+};
+
+const formatTimeRangeTo12Hour = (jamStr) => {
+  if (!jamStr || jamStr === "-") return "-";
+  if (jamStr.includes("-")) {
+    const parts = jamStr.split("-").map(s => s.trim());
+    if (parts.length === 2) {
+      return `${formatTimeTo12Hour(parts[0])} - ${formatTimeTo12Hour(parts[1])}`;
+    }
+  }
+  return formatTimeTo12Hour(jamStr);
+};
+
 /**
  * Helper: Map backend jadwal object → frontend schedule object.
  * Ditulis defensif agar tidak crash meski format backend sedikit berbeda.
@@ -59,10 +90,12 @@ const mapBackendSchedule = (item) => {
     }
   }
 
-  // Ambil jam mulai & selesai
+  // Jam
   const jamMulai = item.jam_mulai || item.jammulai || item.jammulainya || "";
   const jamSelesai = item.jam_selesai || item.jamselesai || item.jamselesainya || "";
-  const jam = jamMulai && jamSelesai ? `${jamMulai} - ${jamSelesai}` : item.jam || "-";
+  const jam = jamMulai && jamSelesai 
+    ? `${formatTimeTo12Hour(jamMulai)} - ${formatTimeTo12Hour(jamSelesai)}` 
+    : formatTimeRangeTo12Hour(item.jam) || "-";
 
   // Ambil ID lab dari relasi atau fallback
   const labId = item.id_lab || item.lab_id || item.labId || item.idLab || item.labnya || item.namalab || null;
@@ -145,12 +178,19 @@ const isScheduleFinished = (tanggalInput, jam) => {
       const parts = jam.split("-").map(s => s.trim());
       const endTimeStr = parts[1];
       if (endTimeStr && endTimeStr.includes(":")) {
-        const [h, m] = endTimeStr.split(":").map(Number);
-        if (!isNaN(h)) endHour = h;
+        const isPM = endTimeStr.toUpperCase().includes("PM");
+        const cleanTimeStr = endTimeStr.replace(/(AM|PM)/i, "").trim();
+        const [h, m] = cleanTimeStr.split(":").map(Number);
+        if (!isNaN(h)) {
+          let parsedHour = h;
+          if (isPM && parsedHour < 12) parsedHour += 12;
+          if (!isPM && parsedHour === 12) parsedHour = 0;
+          endHour = parsedHour;
+        }
         if (!isNaN(m)) endMinute = m;
       }
     }
-    const endDateTime = new Date(year, month - 1, day, endHour, endMinute, 0);
+    const endDateTime = new Date(`${tanggalInput}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00+07:00`);
     const now = new Date();
     return now > endDateTime;
   } catch (e) {
@@ -205,9 +245,9 @@ const mapBackendLogbook = (item, schedules = []) => {
   
   let jam = "-";
   if (jamMulai && jamSelesai) {
-    jam = `${jamMulai} - ${jamSelesai}`;
+    jam = `${formatTimeTo12Hour(jamMulai)} - ${formatTimeTo12Hour(jamSelesai)}`;
   } else {
-    jam = item.jam || sched.jam || "-";
+    jam = formatTimeRangeTo12Hour(item.jam || sched.jam) || "-";
   }
 
   // Nama ruang / lab

@@ -11,9 +11,48 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { loginAdmin, logoutAdmin } from "../services/authService";
 import { createSchedule } from "../services/scheduleService";
-import { deleteEntry, deleteLogbookEntry, clearAllLogbooks, clearAllSchedules, getHistoryLogbooks, getHistorySchedules, postHistoryLogbook, postHistorySchedule } from "../services/historyService";
+import { deleteEntry, deleteLogbookEntry, clearAllLogbooks, clearAllSchedules, getHistoryLogbooks, getHistorySchedules, postHistoryLogbook, postHistorySchedule, archiveScheduleToHistory } from "../services/historyService";
 import { updateBookingStatus } from "../services/bookingService";
 import Swal from "sweetalert2"
+const hoursList = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+const minutesList = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
+const periodsList = ["AM", "PM"];
+
+const parse24To12 = (timeStr) => {
+  if (!timeStr) return { hour: "08", minute: "00", period: "AM" };
+  const parts = timeStr.split(":");
+  if (parts.length >= 2) {
+    let h = parseInt(parts[0], 10);
+    let m = parts[1].slice(0, 2);
+    const mNum = parseInt(m, 10);
+    const roundedM = Math.round(mNum / 5) * 5;
+    m = String(roundedM >= 60 ? 55 : roundedM).padStart(2, "0");
+
+    if (isNaN(h)) return { hour: "08", minute: "00", period: "AM" };
+    let p = "AM";
+    if (h >= 12) {
+      p = "PM";
+      if (h > 12) h -= 12;
+    } else if (h === 0) {
+      h = 12;
+    }
+    return {
+      hour: String(h).padStart(2, "0"),
+      minute: m,
+      period: p
+    };
+  }
+  return { hour: "08", minute: "00", period: "AM" };
+};
+
+const convert12To24 = (h12, m, period) => {
+  let h = parseInt(h12, 10);
+  if (isNaN(h)) h = 8;
+  if (period === "PM" && h < 12) h += 12;
+  if (period === "AM" && h === 12) h = 0;
+  return `${String(h).padStart(2, "0")}:${m}`;
+};
+
 export default function AdminPanel() {
   const { rumpunId } = useParams();
 
@@ -109,8 +148,8 @@ export default function AdminPanel() {
   const [inputMatkul, setInputMatkul] = useState("");
   const [inputDosen, setInputDosen] = useState("");
   const [inputTanggal, setInputTanggal] = useState("");
-  const [inputJamMulai, setInputJamMulai] = useState("");
-  const [inputJamSelesai, setInputJamSelesai] = useState("");
+  const [inputJamMulai, setInputJamMulai] = useState("08:00");
+  const [inputJamSelesai, setInputJamSelesai] = useState("10:00");
   const [inputKelas, setInputKelas] = useState("");
   const [inputKeterangan, setInputKeterangan] = useState("");
 
@@ -121,13 +160,16 @@ export default function AdminPanel() {
     return nameLower.includes("podcast") || nameLower.includes("elc") || nameLower.includes("riset");
   };
 
-  // Helper to get today's date in local time YYYY-MM-DD
+  // Helper to format any date to Asia/Jakarta (WIB) YYYY-MM-DD string
+  const getWIBDateString = (date) => {
+    const options = { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" };
+    const formatter = new Intl.DateTimeFormat("en-CA", options);
+    return formatter.format(date);
+  };
+
+  // Helper to get today's date in local WIB time YYYY-MM-DD
   const getTodayDateString = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    return getWIBDateString(new Date());
   };
 
   // Mobile sidebar visibility
@@ -135,14 +177,13 @@ export default function AdminPanel() {
 
   // States for Import Excel/CSV
   const getMondayOfCurrentWeek = () => {
-    const today = new Date();
-    const day = today.getDay();
-    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+    const todayStr = getWIBDateString(new Date());
+    const [year, month, day] = todayStr.split("-").map(Number);
+    const today = new Date(year, month - 1, day);
+    const dayOfWeek = today.getDay();
+    const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
     const monday = new Date(today.setDate(diff));
-    const y = monday.getFullYear();
-    const m = String(monday.getMonth() + 1).padStart(2, "0");
-    const d = String(monday.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
+    return getWIBDateString(monday);
   };
 
   const [importedSchedules, setImportedSchedules] = useState([]);
@@ -154,7 +195,10 @@ export default function AdminPanel() {
 
   // Dropdown options
   const listHari = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-  const listProdi = ["Teknik Informatika", "Sistem Informasi", "Matematika", "Sains Data", "Fisika", "Biologi"];
+  const listProdi = [
+    "Teknik Informatika", "Sistem Informasi", "Matematika", "Sains Data", 
+    "Fisika", "Biologi", "Kimia", "Agribisnis", "Tambang", "Pangan", "Lingkungan", "Tisimat"
+  ];
 
   // Search, Filter states for Data Penggunaan
   const [searchQuery, setSearchQuery] = useState("");
@@ -312,8 +356,8 @@ if (result.success) {
   setInputMatkul("");
   setInputDosen("");
   setInputTanggal("");
-  setInputJamMulai("");
-  setInputJamSelesai("");
+  setInputJamMulai("08:00");
+  setInputJamSelesai("10:00");
   setInputKeterangan("");
 
   // Refresh data dari backend
@@ -378,7 +422,7 @@ if (result.success) {
       : (schedule.id || schedule._backendId);
 
     return {
-      id: originalId ? parseInt(originalId, 10) : null,
+      id: null,
       schadule: originalId ? parseInt(originalId, 10) : null,
       labnya: parseInt(labId, 10),
       prodinya: schedule.prodi || "",
@@ -595,72 +639,96 @@ if (result.success) {
 
   // Move active logbook/schedule to history and delete from active list
   const handleAddToHistory = async (item) => {
-    const confirmation = await Swal.fire({
+    const hasBooking = item._type === "logbook" || item.status === "dipesan" || item.status === "diterima" || item.status === "selesai";
+    
+    // Resolve parent schedule ID
+    let scheduleId = item._type === "logbook" ? item._scheduleId : (item._backendId || item.id);
+    if (!scheduleId && item._type === "logbook") {
+      scheduleId = item.scheduleId || item.schaduleId || (item.schadule && (item.schadule.id || item.schadule._backendId));
+    }
+
+    const result = await Swal.fire({
       title: "Tambahkan ke History?",
-      text: "Data ini akan dipindahkan ke riwayat laporan dan dihapus dari daftar aktif.",
+      html:
+        '<div class="flex flex-col gap-4 mt-4 text-xs text-left">' +
+        (hasBooking ? 
+        '  <div class="flex flex-col gap-1">' +
+        '    <label class="font-bold text-slate-700">Status Penggunaan Ruangan:</label>' +
+        '    <select id="swal-status-select" class="w-full px-3 py-2 rounded-lg border border-slate-350 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 cursor-pointer">' +
+        '      <option value="terpakai" selected>Terpakai (Ada Kegiatan)</option>' +
+        '      <option value="tidak_terpakai">Tidak Terpakai (Kosong / Batal)</option>' +
+        '    </select>' +
+        '  </div>' : '') +
+        '  <div class="flex items-center gap-3">' +
+        '    <input type="checkbox" id="swal-delete-checkbox" class="w-4 h-4 rounded border-slate-300 accent-blue-600 cursor-pointer" checked>' +
+        '    <label for="swal-delete-checkbox" class="cursor-pointer font-semibold select-none text-slate-600">Hapus data dari daftar aktif setelah dipindahkan</label>' +
+        '  </div>' +
+        '</div>',
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Ya, Pindahkan",
       cancelButtonText: "Batal",
       confirmButtonColor: "#3b82f6",
-      cancelButtonColor: "#64748b"
+      cancelButtonColor: "#64748b",
+      preConfirm: () => {
+        const deleteChecked = document.getElementById("swal-delete-checkbox").checked;
+        const statusSelect = document.getElementById("swal-status-select");
+        const usageStatus = statusSelect ? statusSelect.value : "tidak_terpakai";
+        return { deleteChecked, usageStatus };
+      }
     });
 
-    if (!confirmation.isConfirmed) return;
+    if (!result.isConfirmed) return;
+
+    const shouldDeleteActive = result.value.deleteChecked;
+    const usageStatus = result.value.usageStatus;
 
     try {
-      // 1. Post to backend history
-      let postResult;
-      if (item._type === "logbook" || item.status === "dipesan" || item.status === "diterima" || item.status === "selesai") {
-        // Post the parent schedule details first
-        const schedPostResult = await postHistorySchedule(formatSchedulePayload(item));
-        if (!schedPostResult.success) {
-          throw new Error(schedPostResult.message || "Gagal menyimpan jadwal induk ke riwayat backend.");
+      Swal.fire({
+        title: "Sedang memproses...",
+        text: "Mohon tunggu sebentar.",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
         }
-        
-        // Post the logbook details second
-        postResult = await postHistoryLogbook(formatLogbookPayload(item));
-      } else {
-        postResult = await postHistorySchedule(formatSchedulePayload(item));
-      }
+      });
 
-      if (!postResult.success) {
-        throw new Error(postResult.message || "Gagal menyimpan ke riwayat backend.");
-      }
-
-      // 2. Delete from active backend database
-      let deleteResult;
-      if (item._backendId) {
-        deleteResult = (item._type === "logbook" || item.status === "dipesan" || item.status === "diterima" || item.status === "selesai")
-          ? await deleteLogbookEntry(item._backendId)
-          : await deleteEntry(item._backendId);
-      } else {
-        deleteResult = { success: true };
-      }
-
-      if (deleteResult.success) {
-        // Jika offline/lokal saja
-        if (!item._backendId) {
-          setMySchedules(mySchedules.filter((s) => s.id !== item.id));
+      // 1. Jika dipilih Tidak Terpakai, hapus logbook aktif terlebih dahulu agar tidak ikut diarsipkan
+      if (hasBooking && usageStatus === "tidak_terpakai" && item._type === "logbook") {
+        if (item._backendId) {
+          const deleteLogbookRes = await deleteLogbookEntry(item._backendId);
+          if (!deleteLogbookRes.success) {
+            throw new Error(deleteLogbookRes.message || "Gagal menghapus logbook aktif.");
+          }
         }
-
-        await Swal.fire({
-          icon: "success",
-          title: "Berhasil",
-          text: "Data berhasil dipindahkan ke riwayat laporan.",
-          confirmButtonColor: "#3b82f6"
-        });
-
-        await refreshData();
-        await refreshHistoryData();
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Gagal Menghapus Data Aktif",
-          text: `Gagal: ${deleteResult.message}`,
-          confirmButtonColor: "#3b82f6"
-        });
       }
+
+      // 2. Arsipkan jadwal secara atomik via endpoint backend baru
+      if (!scheduleId) {
+        throw new Error("ID Jadwal tidak valid atau tidak ditemukan.");
+      }
+
+      const archiveResult = await archiveScheduleToHistory(scheduleId);
+      if (!archiveResult.success) {
+        throw new Error(archiveResult.message || "Gagal mengarsipkan jadwal di server.");
+      }
+
+      // 3. Jika dipilih hapus permanen, hapus dari state visual lokal secara langsung
+      if (shouldDeleteActive) {
+        setMySchedules(prev => prev.filter((s) => s.id !== item.id));
+      }
+
+      await Swal.fire({
+        icon: "success",
+        title: "Berhasil",
+        text: shouldDeleteActive 
+          ? "Data berhasil dipindahkan ke riwayat laporan secara atomik dan dihapus dari daftar aktif." 
+          : "Data berhasil dicatat ke riwayat laporan secara atomik dan tetap aktif.",
+        confirmButtonColor: "#3b82f6"
+      });
+
+      await refreshData();
+      await refreshHistoryData();
     } catch (err) {
       Swal.fire({
         icon: "error",
@@ -685,33 +753,33 @@ if (result.success) {
     if (!confirmation.isConfirmed) return;
 
     const item = mySchedules.find((s) => s.id === id);
+    let scheduleId = item ? (item._type === "logbook" ? item._scheduleId : (item._backendId || item.id)) : null;
+    if (!scheduleId && item && item._type === "logbook") {
+      scheduleId = item.scheduleId || item.schaduleId || (item.schadule && (item.schadule.id || item.schadule._backendId));
+    }
 
-    if (item && item._backendId) {
+    if (item && item._backendId && scheduleId) {
       try {
-        // Jika statusnya dipesan / bertipe logbook, hapus menggunakan endpoint /delete/logbook/:id
-        const result = (item._type === "logbook" || item.status === "dipesan" || item.status === "diterima" || item.status === "selesai")
-          ? await deleteLogbookEntry(item._backendId)
-          : await deleteEntry(item._backendId);
+        Swal.fire({
+          title: "Sedang menghapus...",
+          text: "Mohon tunggu sebentar.",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        // Panggil endpoint arsip atomik baru
+        const result = await archiveScheduleToHistory(scheduleId);
 
         if (result.success) {
-          // Kirim data ke history backend sebelum refresh
-          try {
-            if (item._type === "logbook" || item.status === "dipesan" || item.status === "diterima" || item.status === "selesai") {
-              const schedHistRes = await postHistorySchedule(formatSchedulePayload(item));
-              if (schedHistRes.success) {
-                await postHistoryLogbook(formatLogbookPayload(item));
-              }
-            } else {
-              await postHistorySchedule(formatSchedulePayload(item));
-            }
-          } catch (histErr) {
-            console.error("Gagal mencatat riwayat:", histErr);
-          }
+          // Hapus dari state visual lokal secara langsung agar menghilang seketika
+          setMySchedules(prev => prev.filter((s) => s.id !== id));
 
           await Swal.fire({
             icon: "success",
             title: "Berhasil",
-            text: "Data berhasil dihapus.",
+            text: "Data berhasil dihapus dan diarsipkan.",
           });
 
           await refreshData();
@@ -731,6 +799,7 @@ if (result.success) {
         });
       }
     } else {
+      // Jika offline/lokal saja
       try {
         if (item && (item._type === "logbook" || item.status === "dipesan" || item.status === "diterima" || item.status === "selesai")) {
           await postHistoryLogbook(formatLogbookPayload(item));
@@ -1257,29 +1326,33 @@ const handleSaveEdit = (e) => {
     // 1. Filter Tanggal (hanya berlaku jika reportType === "semua")
     let matchesDate = true;
     if (reportType === "semua" && (startDate || endDate)) {
-      const logDate = new Date(log.tanggalInput);
+      const logDate = new Date(`${log.tanggalInput}T00:00:00+07:00`);
       if (startDate && !endDate) {
-        matchesDate = logDate >= new Date(startDate);
+        const start = new Date(`${startDate}T00:00:00+07:00`);
+        matchesDate = logDate >= start;
       } else if (!startDate && endDate) {
-        matchesDate = logDate <= new Date(endDate);
+        const end = new Date(`${endDate}T23:59:59+07:00`);
+        matchesDate = logDate <= end;
       } else if (startDate && endDate) {
-        matchesDate = logDate >= new Date(startDate) && logDate <= new Date(endDate);
+        const start = new Date(`${startDate}T00:00:00+07:00`);
+        const end = new Date(`${endDate}T23:59:59+07:00`);
+        matchesDate = logDate >= start && logDate <= end;
       }
     }
 
     // 2. Filter Jenis Laporan (Periode)
     let matchesType = true;
     if (reportType === "harian") {
-      const logDate = new Date(log.tanggalInput).toDateString();
-      const todayDate = new Date().toDateString();
-      matchesType = logDate === todayDate;
+      const todayWIB = getWIBDateString(new Date());
+      matchesType = log.tanggalInput === todayWIB;
     } else if (reportType === "semester") {
-      const logDate = new Date(log.tanggalInput);
+      const logDate = new Date(`${log.tanggalInput}T00:00:00+07:00`);
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const sixMonthsAgo = new Date(today);
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      matchesType = logDate >= sixMonthsAgo && logDate <= new Date();
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(today.getMonth() - 6);
+      const sixMonthsAgoStr = getWIBDateString(sixMonthsAgo);
+      const sixMonthsAgoDate = new Date(`${sixMonthsAgoStr}T00:00:00+07:00`);
+      matchesType = logDate >= sixMonthsAgoDate && logDate <= today;
     }
 
     // 3. Filter Status Keterisian (Terpakai / Tidak Terpakai)
@@ -1740,6 +1813,11 @@ const handleSaveEdit = (e) => {
           const normProdi = prodiVal.toLowerCase().trim();
           if (prodiMapping[normProdi]) {
             prodiVal = prodiMapping[normProdi];
+          } else {
+            const matchedProdi = listProdi.find(p => p.toLowerCase() === normProdi);
+            if (matchedProdi) {
+              prodiVal = matchedProdi;
+            }
           }
           
           const hadirVal = Math.min(parseInt(val(indices.jumlahHadir, "0")) || 0, 36);
@@ -2951,29 +3029,25 @@ const handleSaveEdit = (e) => {
                       </label>
                       <select
                         required
-                        value={inputLab}
-                        onChange={(e) => {
-                          const newLab = e.target.value;
-                          setInputLab(newLab);
-                          if (isLockedLab(newLab)) {
-                            setInputProdi("Umum");
-                            setInputMatkul("");
-                            setInputKeterangan("");
-                          } else {
-                            if (isLockedLab(inputLab)) {
-                              setInputProdi("");
-                              setInputMatkul("");
-                            }
-                          }
-                        }}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
+                        disabled={isLockedLab(inputLab)}
+                        value={inputProdi}
+                        onChange={(e) => setInputProdi(e.target.value)}
+                        className={`w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition ${
+                          isLockedLab(inputLab) ? "bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200" : "bg-slate-50/50"
+                        }`}
                       >
-                        <option value="">-- Pilih Laboratorium --</option>
-                        {laboratories.map((lab) => (
-                          <option key={lab.id} value={lab.name}>
-                            {lab.name}
-                          </option>
-                        ))}
+                        {isLockedLab(inputLab) ? (
+                          <option value="Umum">Umum</option>
+                        ) : (
+                          <>
+                            <option value="">-- Pilih Prodi --</option>
+                            {listProdi.map((p) => (
+                              <option key={p} value={p}>
+                                {p}
+                              </option>
+                            ))}
+                          </>
+                        )}
                       </select>
                     </div>
 
@@ -2983,17 +3057,32 @@ const handleSaveEdit = (e) => {
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                           Program Studi (Prodi)
                         </label>
-                        <input
-                          type="text"
+                        <select
                           required
-                          disabled={isLockedLab(inputLab)}
-                          placeholder={isLockedLab(inputLab) ? "Umum (Terkunci)" : "Contoh: Teknik Informatika"}
-                          value={inputProdi}
-                          onChange={(e) => setInputProdi(e.target.value)}
-                          className={`w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition ${
-                            isLockedLab(inputLab) ? "bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200" : "bg-slate-50/50"
-                          }`}
-                        />
+                          value={inputLab}
+                          onChange={(e) => {
+                            const newLab = e.target.value;
+                            setInputLab(newLab);
+                            if (isLockedLab(newLab)) {
+                              setInputProdi("Umum");
+                              setInputMatkul("");
+                              setInputKeterangan("");
+                            } else {
+                              if (isLockedLab(inputLab)) {
+                                setInputProdi("");
+                                setInputMatkul("");
+                              }
+                            }
+                          }}
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
+                        >
+                          <option value="">-- Pilih Laboratorium --</option>
+                          {laboratories.map((lab) => (
+                            <option key={lab.id} value={lab.name}>
+                              {lab.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
@@ -3079,30 +3168,82 @@ const handleSaveEdit = (e) => {
                     </div>
 
                     {/* Jam Mulai & Jam Selesai */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                           Jam Mulai
                         </label>
-                        <input
-                          type="time"
-                          required
-                          value={inputJamMulai}
-                          onChange={(e) => setInputJamMulai(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
-                        />
+                        <div className="flex gap-2">
+                          <select
+                            value={parse24To12(inputJamMulai || "08:00").hour}
+                            onChange={(e) => {
+                              const current = parse24To12(inputJamMulai || "08:00");
+                              setInputJamMulai(convert12To24(e.target.value, current.minute, current.period));
+                            }}
+                            className="flex-1 px-2.5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-xs bg-slate-50/50"
+                          >
+                            {hoursList.map(h => <option key={h} value={h}>{h}</option>)}
+                          </select>
+                          <span className="self-center font-bold text-slate-450">:</span>
+                          <select
+                            value={parse24To12(inputJamMulai || "08:00").minute}
+                            onChange={(e) => {
+                              const current = parse24To12(inputJamMulai || "08:00");
+                              setInputJamMulai(convert12To24(current.hour, e.target.value, current.period));
+                            }}
+                            className="flex-1 px-2.5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-xs bg-slate-50/50"
+                          >
+                            {minutesList.map(m => <option key={m} value={m}>{m}</option>)}
+                          </select>
+                          <select
+                            value={parse24To12(inputJamMulai || "08:00").period}
+                            onChange={(e) => {
+                              const current = parse24To12(inputJamMulai || "08:00");
+                              setInputJamMulai(convert12To24(current.hour, current.minute, e.target.value));
+                            }}
+                            className="px-2.5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-xs bg-slate-50/50"
+                          >
+                            {periodsList.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                           Jam Selesai
                         </label>
-                        <input
-                          type="time"
-                          required
-                          value={inputJamSelesai}
-                          onChange={(e) => setInputJamSelesai(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
-                        />
+                        <div className="flex gap-2">
+                          <select
+                            value={parse24To12(inputJamSelesai || "10:00").hour}
+                            onChange={(e) => {
+                              const current = parse24To12(inputJamSelesai || "10:00");
+                              setInputJamSelesai(convert12To24(e.target.value, current.minute, current.period));
+                            }}
+                            className="flex-1 px-2.5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-xs bg-slate-50/50"
+                          >
+                            {hoursList.map(h => <option key={h} value={h}>{h}</option>)}
+                          </select>
+                          <span className="self-center font-bold text-slate-450">:</span>
+                          <select
+                            value={parse24To12(inputJamSelesai || "10:00").minute}
+                            onChange={(e) => {
+                              const current = parse24To12(inputJamSelesai || "10:00");
+                              setInputJamSelesai(convert12To24(current.hour, e.target.value, current.period));
+                            }}
+                            className="flex-1 px-2.5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-xs bg-slate-50/50"
+                          >
+                            {minutesList.map(m => <option key={m} value={m}>{m}</option>)}
+                          </select>
+                          <select
+                            value={parse24To12(inputJamSelesai || "10:00").period}
+                            onChange={(e) => {
+                              const current = parse24To12(inputJamSelesai || "10:00");
+                              setInputJamSelesai(convert12To24(current.hour, current.minute, e.target.value));
+                            }}
+                            className="px-2.5 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-xs bg-slate-50/50"
+                          >
+                            {periodsList.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
                       </div>
                     </div>
 
@@ -3117,8 +3258,8 @@ const handleSaveEdit = (e) => {
                           setInputMatkul("");
                           setInputDosen("");
                           setInputTanggal("");
-                          setInputJamMulai("");
-                          setInputJamSelesai("");
+                          setInputJamMulai("08:00");
+                          setInputJamSelesai("10:00");
                           setInputKeterangan("");
                           setActiveTab("data-penggunaan");
                         }}
@@ -3292,7 +3433,8 @@ const handleSaveEdit = (e) => {
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Jam</label>
                     <input
-                      type="time"
+                      type="text"
+                      placeholder="Contoh: 08:00 - 10:00"
                       value={editFormData.jam}
                       onChange={(e) => setEditFormData({ ...editFormData, jam: e.target.value })}
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 bg-white"

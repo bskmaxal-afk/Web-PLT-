@@ -74,6 +74,16 @@ export default function Navbar() {
     return `${dayName}, ${dayNum} ${monthName} ${year} | ${hoursStr}:${minutes} ${ampm}`;
   };
 
+  const formatShortTime = (date) => {
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const hoursStr = String(hours).padStart(2, "0");
+    return `${hoursStr}:${minutes} ${ampm}`;
+  };
+
   return (
     <header className="navbar-container flex items-center justify-between py-4 px-8 bg-transparent">
       {/* Left side: Menu toggle for mobile, Calendar & Green Admin Panel button */}
@@ -92,7 +102,7 @@ export default function Navbar() {
             <Calendar size={12} />
           </div>
           <span className="hidden sm:inline font-sans tracking-wide text-slate-650">{formatIndonesianDate(time)}</span>
-          <span className="sm:hidden font-mono text-slate-650">{time.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })}</span>
+          <span className="sm:hidden font-mono text-slate-650">{formatShortTime(time)}</span>
         </div>
 
         {/* Green Admin Panel button (only visible inside rumpun) */}

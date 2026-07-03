@@ -159,5 +159,25 @@ export const postHistorySchedule = async (payload) => {
     return { success: false, message };
   }
 };
-
-
+/**
+ * Pindahkan jadwal beserta logbooknya ke history secara atomik.
+ * POST /post/history/archive/:id
+ *
+ * @param {string|number} id - ID jadwal aktif yang akan diarsipkan
+ * @returns {Promise<{ success: boolean, message?: string, data?: any }>}
+ */
+export const archiveScheduleToHistory = async (id) => {
+  try {
+    const response = await API.post(`/post/history/archive/${id}`);
+    if (response.data?.status === 200 || response.status === 200) {
+      return { success: true, data: response.data };
+    }
+    return { success: false, message: response.data?.error || response.data?.message || "Gagal mengarsipkan data." };
+  } catch (error) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Gagal menghubungi server untuk mengarsipkan.";
+    return { success: false, message };
+  }
+};
