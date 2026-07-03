@@ -159,6 +159,21 @@ export default function RumpunGrid() {
       prodis: ["Teknik Lingkungan"],
       link: "#"
     },
+    {
+      id: "fst",
+      name: "FST",
+      fullName: "Fakultas Sains dan Teknologi",
+      description: "Kluster riset dan laboratorium terpadu Fakultas Sains dan Teknologi UIN Syarif Hidayatullah Jakarta.",
+      icon: Beaker,
+      colorClass: "bg-cyan-600",
+      textClass: "text-cyan-650",
+      bgClass: "bg-cyan-50/50",
+      glowClass: "group-hover:shadow-cyan-500/10",
+      borderClass: "border-cyan-500/20 hover:border-cyan-500",
+      hoverBtnClass: "hover:bg-cyan-600 hover:text-white",
+      prodis: ["Informatika", "Sistem Informasi", "Matematika", "Fisika", "Kimia", "Biologi", "Agribisnis", "Tambang", "Pangan", "Lingkungan"],
+      link: "#"
+    },
   ];
 
   // Filtering Logic
@@ -174,13 +189,13 @@ export default function RumpunGrid() {
     if (!matchesSearch) return false;
     if (activeFilter === "semua") return true;
     if (activeFilter === "sains-komputer") {
-      return rumpun.id === "tisimat" || rumpun.id === "fisika";
+      return rumpun.id === "tisimat" || rumpun.id === "fisika" || rumpun.id === "fst";
     }
     if (activeFilter === "kimia-biologi") {
-      return rumpun.id === "kimia" || rumpun.id === "biologi";
+      return rumpun.id === "kimia" || rumpun.id === "biologi" || rumpun.id === "fst";
     }
     if (activeFilter === "terapan-bumi") {
-      return rumpun.id === "agribisnis" || rumpun.id === "tambang" || rumpun.id === "pangan" || rumpun.id === "lingkungan";
+      return rumpun.id === "agribisnis" || rumpun.id === "tambang" || rumpun.id === "pangan" || rumpun.id === "lingkungan" || rumpun.id === "fst";
     }
     return true;
   });

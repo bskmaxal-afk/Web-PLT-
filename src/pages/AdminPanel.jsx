@@ -197,7 +197,7 @@ export default function AdminPanel() {
   const listHari = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
   const listProdi = [
     "Teknik Informatika", "Sistem Informasi", "Matematika", "Sains Data", 
-    "Fisika", "Biologi", "Kimia", "Agribisnis", "Tambang", "Pangan", "Lingkungan", "Tisimat"
+    "Fisika", "Biologi", "Kimia", "Agribisnis", "Tambang", "Pangan", "Lingkungan", "Tisimat", "FST"
   ];
 
   // Search, Filter states for Data Penggunaan

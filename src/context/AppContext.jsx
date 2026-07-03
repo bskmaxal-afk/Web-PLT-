@@ -329,6 +329,9 @@ const mapBackendLogbook = (item, schedules = []) => {
 };
 
 const mapLabRumpun = (lab) => {
+  if (lab.rumpun && lab.rumpun !== "umum" && lab.rumpun !== "") {
+    return lab;
+  }
   const name = (lab.name || "").toLowerCase();
   const prodi = (lab.prodi || "").toLowerCase();
   const jenisLab = (lab.jenisLab || "").toLowerCase();
@@ -378,7 +381,117 @@ const mapLabRumpun = (lab) => {
 };
 
 export const AppProvider = ({ children }) => {
-  const [laboratories, setLaboratories] = useState(() => (labs || []).map(mapLabRumpun));
+  // 1. Rumpun list state (supporting custom/duplicated rumpuns)
+  const [rumpuns, setRumpuns] = useState(() => {
+    const saved = localStorage.getItem("matisi_rumpuns");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // use default
+      }
+    }
+    return [
+      { id: "tisimat", name: "TISIMAT", fullName: "Teknologi Informasi, SI, Matematika", description: "Kluster riset komputasi sains, rekayasa perangkat lunak, sistem siber, elektro, dan analisis data terintegrasi." },
+      { id: "kimia", name: "KIMIA", fullName: "Rumpun Kimia", description: "Pengujian kimia instrumentasi modern, analisis analitik, kimia lingkungan, dan sintesis senyawa organik." },
+      { id: "biologi", name: "BIOLOGI", fullName: "Rumpun Biologi", description: "Eksplorasi bioteknologi modern, mikrobiologi, kultur jaringan tumbuhan, dan analisis biomolekul." },
+      { id: "fisika", name: "FISIKA", fullName: "Rumpun Fisika", description: "Praktikum fisika dasar, eksperimen material, kalibrasi instrumentasi digital, dan fisika medikal." },
+      { id: "agribisnis", name: "AGRIBISNIS", fullName: "Rumpun Agribisnis", description: "Inkubasi bisnis pertanian terpadu, analisis sosial ekonomi pertanian, dan simulasi kelayakan pasar." },
+      { id: "tambang", name: "TAMBANG", fullName: "Rumpun Tambang", description: "Studi mekanika batuan, pengujian mineralogi galian, pemetaan geologi lapangan, dan survei seismik." },
+      { id: "pangan", name: "PANGAN", fullName: "Rumpun Pangan", description: "Evaluasi nilai gizi sensoris makanan, proses pengolahan bahan pangan, dan rekayasa pengemasan produk." },
+      { id: "lingkungan", name: "LINGKUNGAN", fullName: "Rumpun Lingkungan", description: "Analisis pengolahan limbah domestik/industri, rekayasa ekosistem, hidrologi air, dan mitigasi bencana." }
+    ];
+  });
+
+  // 2. Custom laboratories state
+  const [customLabs, setCustomLabs] = useState(() => {
+    const saved = localStorage.getItem("matisi_custom_labs");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // ignore
+      }
+    }
+    return [];
+  });
+
+  const [laboratories, setLaboratories] = useState(() => {
+    const baseLabs = (labs || []).map(mapLabRumpun);
+    const savedCustom = localStorage.getItem("matisi_custom_labs");
+    let cLabs = [];
+    if (savedCustom) {
+      try {
+        cLabs = JSON.parse(savedCustom);
+      } catch (e) {
+        // ignore
+      }
+    }
+    return [...baseLabs, ...cLabs];
+  });
+
+  // Merge custom labs when fetching active labs from backend
+  useEffect(() => {
+    const fetchLaboratories = async () => {
+      try {
+        const fetchedLabs = await getLabs();
+        if (fetchedLabs && fetchedLabs.length > 0) {
+          const mapped = fetchedLabs.map(mapLabRumpun);
+          setLaboratories([...mapped, ...customLabs]);
+        }
+      } catch (error) {
+        console.error("Gagal fetch daftar lab:", error);
+      }
+    };
+    fetchLaboratories();
+  }, [customLabs]);
+
+  const duplicateRumpun = useCallback((sourceRumpunId, newRumpunName) => {
+    const newId = newRumpunName.toLowerCase().replace(/[^a-z0-9]/g, "_").trim();
+    if (!newId) return { success: false, message: "Nama rumpun tidak valid." };
+
+    if (rumpuns.some(r => r.id === newId)) {
+      return { success: false, message: "Rumpun dengan nama/ID ini sudah ada." };
+    }
+
+    const sourceRumpun = rumpuns.find(r => r.id === sourceRumpunId);
+    if (!sourceRumpun) {
+      return { success: false, message: "Rumpun sumber tidak ditemukan." };
+    }
+
+    // Clone rumpun metadata
+    const newRumpun = {
+      ...sourceRumpun,
+      id: newId,
+      name: newRumpunName.toUpperCase(),
+      fullName: `Rumpun ${newRumpunName}`,
+      description: `Salinan dari Rumpun ${sourceRumpun.name}. ${sourceRumpun.description}`,
+    };
+
+    const updatedRumpuns = [...rumpuns, newRumpun];
+    setRumpuns(updatedRumpuns);
+    localStorage.setItem("matisi_rumpuns", JSON.stringify(updatedRumpuns));
+
+    // Duplicate laboratories belonging to the source rumpun
+    const labsToDuplicate = laboratories.filter(l => l.rumpun?.toLowerCase() === sourceRumpunId.toLowerCase());
+    const duplicatedLabs = labsToDuplicate.map((l, index) => {
+      const newLabId = 1000 + customLabs.length + index + Math.floor(Math.random() * 10000);
+      return {
+        ...l,
+        id: newLabId,
+        name: `${l.name} (${newRumpunName})`,
+        description: `${l.description} (Salinan ${newRumpunName})`,
+        rumpun: newId,
+      };
+    });
+
+    const updatedCustomLabs = [...customLabs, ...duplicatedLabs];
+    setCustomLabs(updatedCustomLabs);
+    localStorage.setItem("matisi_custom_labs", JSON.stringify(updatedCustomLabs));
+
+    return { success: true, message: `Rumpun ${newRumpunName} berhasil diduplikasi!` };
+  }, [rumpuns, laboratories, customLabs]);
+
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   // Admin authentication state for Riwayat Penggunaan access

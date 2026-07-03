@@ -9,6 +9,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import logoUIN from "../assets/logoUIN_new.png";
+import logoSimpul from "../assets/logoSimpul.png";
 
 export default function LandingPage() {
   return (
@@ -113,7 +114,7 @@ export default function LandingPage() {
             className="text-5xl md:text-7xl font-extrabold text-[#0f3484] tracking-wide select-none"
             style={{ fontFamily: "'Fredoka', sans-serif" }}
           >
-            SIMPUL
+            <img src={logoSimpul} alt="SIMPUL Logo" className="mx-auto h-14 md:h-49 w-auto object-contain" />
           </h2>
           <h3 className="text-base md:text-xl font-extrabold text-[#0d307d] tracking-normal uppercase leading-tight">
             Sistem Manajemen Penggunaan Laboratorium

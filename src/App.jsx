@@ -20,6 +20,7 @@ import TambangDashboard from "./pages/Tambang/TambangDashboard";
 import PanganDashboard from "./pages/Pangan/PanganDashboard";
 import LingkunganDashboard from "./pages/Lingkungan/LingkunganDashboard";
 import TisimatDashboard from "./pages/Tisimat/TisimatDashboard";
+import FstDashboard from "./pages/Fst/FstDashboard";
 
 function App() {
   return (
@@ -78,6 +79,12 @@ function App() {
           <Route
             path="/tisimat"
             element={<TisimatDashboard />}
+          />
+
+          {/* Fst Custom Dashboard */}
+          <Route
+            path="/fst"
+            element={<FstDashboard />}
           />
 
           {/* Dashboard Pages */}

@@ -12,7 +12,7 @@ const SidebarContent = ({ showCloseBtn = false, setSidebarOpen }) => {
   const navigate = useNavigate();
 
   const pathParts = location.pathname.split("/").filter(Boolean);
-  const rumpunList = ["tisimat", "biologi", "fisika", "kimia", "agribisnis", "tambang", "pangan", "lingkungan"];
+  const rumpunList = ["tisimat", "biologi", "fisika", "kimia", "agribisnis", "tambang", "pangan", "lingkungan", "fst"];
   let currentRumpun = null;
 
   if (pathParts[0] && rumpunList.includes(pathParts[0].toLowerCase())) {

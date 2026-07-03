@@ -496,5 +496,37 @@ export const labs = [
     borderClass: "border-amber-600/20 hover:border-amber-600",
     hoverBtnClass: "hover:bg-amber-600 hover:text-white",
     jenisLab: "tambang"
+  },
+  {
+    id: 38,
+    name: "LAB INOVASI FST",
+    description: "Laboratorium terpadu untuk riset inovasi, inkubasi teknologi, dan reka cipta sains FST.",
+    capacity: 30,
+    status: "available",
+    prodi: "FST",
+    spek: "High-End Workstation Intel Core i9, 32GB RAM, NVIDIA GeForce RTX 4080",
+    software: "AutoCAD, Unity, Blender, VS Code, MATLAB",
+    icon: "Computer",
+    colorClass: "bg-cyan-500",
+    textClass: "text-cyan-600",
+    borderClass: "border-cyan-500/20 hover:border-cyan-500",
+    hoverBtnClass: "hover:bg-cyan-600 hover:text-white",
+    rumpun: "fst"
+  },
+  {
+    id: 39,
+    name: "LAB RISET BERSAMA FST",
+    description: "Laboratorium riset bersama antar disiplin ilmu di Fakultas Sains dan Teknologi UIN Jakarta.",
+    capacity: 40,
+    status: "available",
+    prodi: "FST",
+    spek: "Spectrophotometer, High Speed Centrifuge, Deep Freezer, Biosafety Cabinet Class II",
+    software: "SPSS, R Studio, MATLAB, ChemDraw",
+    icon: "Beaker",
+    colorClass: "bg-indigo-500",
+    textClass: "text-indigo-650",
+    borderClass: "border-indigo-500/20 hover:border-indigo-500",
+    hoverBtnClass: "hover:bg-indigo-600 hover:text-white",
+    rumpun: "fst"
   }
 ];
