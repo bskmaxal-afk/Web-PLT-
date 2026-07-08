@@ -195,10 +195,24 @@ export default function AdminPanel() {
 
   // Dropdown options
   const listHari = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-  const listProdi = [
-    "Teknik Informatika", "Sistem Informasi", "Matematika", "Sains Data", 
-    "Fisika", "Biologi", "Kimia", "Agribisnis", "Tambang", "Pangan", "Lingkungan", "Tisimat", "FST"
-  ];
+
+  // Mapping rumpun ke daftar program studi masing-masing (sesuai dashboard utama PLT)
+  const rumpunStudiMap = {
+    "tisimat": ["Informatika", "Sistem Informasi", "Matematika", "Elektro"],
+    "kimia": ["Kimia Murni", "Pendidikan Kimia"],
+    "biologi": ["Biologi", "Bioteknologi"],
+    "fisika": ["Fisika Murni", "Geofisika"],
+    "agribisnis": ["Agribisnis", "Agroteknologi"],
+    "tambang": ["Teknik Pertambangan", "Teknik Geologi"],
+    "pangan": ["Teknologi Pangan"],
+    "lingkungan": ["Teknik Lingkungan"],
+    "fst": ["Informatika", "Sistem Informasi", "Matematika", "Fisika", "Kimia", "Biologi", "Agribisnis", "Tambang", "Pangan", "Lingkungan"],
+  };
+
+  // Daftar prodi yang tampil di dropdown sesuai rumpun aktif, atau semua rumpun jika di halaman umum
+  const listProdi = rumpunId && rumpunStudiMap[rumpunId.toLowerCase()]
+    ? rumpunStudiMap[rumpunId.toLowerCase()]
+    : ["TISIMAT", "Kimia", "Biologi", "Fisika", "Agribisnis", "Tambang", "Pangan", "Lingkungan", "FST"];
 
   // Search, Filter states for Data Penggunaan
   const [searchQuery, setSearchQuery] = useState("");
@@ -1803,12 +1817,26 @@ const handleSaveEdit = (e) => {
           
           let prodiVal = val(indices.prodi, "Umum");
           const prodiMapping = {
-            "ti": "Teknik Informatika",
-            "si": "Sistem Informasi",
-            "sd": "Sains Data",
-            "mtk": "Matematika",
+            "ti": "TISIMAT",
+            "teknik informatika": "TISIMAT",
+            "si": "TISIMAT",
+            "sistem informasi": "TISIMAT",
+            "sd": "TISIMAT",
+            "sains data": "TISIMAT",
+            "mtk": "TISIMAT",
+            "matematika": "TISIMAT",
+            "tisimat": "TISIMAT",
             "fis": "Fisika",
-            "bio": "Biologi"
+            "fisika": "Fisika",
+            "bio": "Biologi",
+            "biologi": "Biologi",
+            "kim": "Kimia",
+            "kimia": "Kimia",
+            "agribisnis": "Agribisnis",
+            "tambang": "Tambang",
+            "pangan": "Pangan",
+            "lingkungan": "Lingkungan",
+            "fst": "FST"
           };
           const normProdi = prodiVal.toLowerCase().trim();
           if (prodiMapping[normProdi]) {
@@ -3022,66 +3050,66 @@ const handleSaveEdit = (e) => {
 
                   {/* Form Content */}
                   <form onSubmit={handleAddSchedule} className="p-6 space-y-5">
-                    {/* Lab Apa Dropdown */}
+                    {/* Laboratorium / Ruangan Dropdown */}
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                         Laboratorium / Ruangan
                       </label>
                       <select
                         required
-                        disabled={isLockedLab(inputLab)}
-                        value={inputProdi}
-                        onChange={(e) => setInputProdi(e.target.value)}
-                        className={`w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition ${
-                          isLockedLab(inputLab) ? "bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200" : "bg-slate-50/50"
-                        }`}
+                        value={inputLab}
+                        onChange={(e) => {
+                          const newLab = e.target.value;
+                          setInputLab(newLab);
+                          if (isLockedLab(newLab)) {
+                            setInputProdi("Umum");
+                            setInputMatkul("");
+                            setInputKeterangan("");
+                          } else {
+                            if (isLockedLab(inputLab)) {
+                              setInputProdi("");
+                              setInputMatkul("");
+                            }
+                          }
+                        }}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
                       >
-                        {isLockedLab(inputLab) ? (
-                          <option value="Umum">Umum</option>
-                        ) : (
-                          <>
-                            <option value="">-- Pilih Prodi --</option>
-                            {listProdi.map((p) => (
-                              <option key={p} value={p}>
-                                {p}
-                              </option>
-                            ))}
-                          </>
-                        )}
+                        <option value="">-- Pilih Laboratorium --</option>
+                        {laboratories.map((lab) => (
+                          <option key={lab.id} value={lab.name}>
+                            {lab.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
-                    {/* Prodi & Kelas */}
+                    {/* Program Studi & Kelas */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                          Program Studi (Prodi)
+                          {rumpunId ? "Program Studi" : "Rumpun / Prodi"}
                         </label>
                         <select
                           required
-                          value={inputLab}
-                          onChange={(e) => {
-                            const newLab = e.target.value;
-                            setInputLab(newLab);
-                            if (isLockedLab(newLab)) {
-                              setInputProdi("Umum");
-                              setInputMatkul("");
-                              setInputKeterangan("");
-                            } else {
-                              if (isLockedLab(inputLab)) {
-                                setInputProdi("");
-                                setInputMatkul("");
-                              }
-                            }
-                          }}
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition bg-slate-50/50"
+                          disabled={isLockedLab(inputLab)}
+                          value={inputProdi}
+                          onChange={(e) => setInputProdi(e.target.value)}
+                          className={`w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition ${
+                            isLockedLab(inputLab) ? "bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200" : "bg-slate-50/50"
+                          }`}
                         >
-                          <option value="">-- Pilih Laboratorium --</option>
-                          {laboratories.map((lab) => (
-                            <option key={lab.id} value={lab.name}>
-                              {lab.name}
-                            </option>
-                          ))}
+                          {isLockedLab(inputLab) ? (
+                            <option value="Umum">Umum</option>
+                          ) : (
+                            <>
+                              <option value="">-- Pilih {rumpunId ? "Program Studi" : "Rumpun / Prodi"} --</option>
+                              {listProdi.map((p) => (
+                                <option key={p} value={p}>
+                                  {p}
+                                </option>
+                              ))}
+                            </>
+                          )}
                         </select>
                       </div>
                       <div>
