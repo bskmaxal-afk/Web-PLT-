@@ -9,7 +9,7 @@ import { BACKEND_URL } from "./api";
  *   - "penggunaanlab:update" → data jadwal/penggunaan lab berubah (array lengkap)
  *   - "logbook:update"       → data logbook berubah (array lengkap, sudah JOIN)
  * 
- * Server: http://172.20.32.62:3000
+ * Server: http://172.20.32.69:3000
  * 
  * Pola: Socket mengirim DATA LENGKAP (array) dari database setiap kali ada
  * perubahan. Frontend tinggal replace data di state, TANPA perlu fetch ulang via HTTP.
